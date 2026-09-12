@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RocketMQ 分布式消息队列教程</title>
+<style>
+:root {
+  --sidebar-w: 300px;
+  --bg: #ffffff;
+  --bg-sidebar: #f5f5f5;
+  --text: #1a1a2e;
+  --text-light: #555555;
+  --accent: #e74c3c;
+  --accent-hover: #c0392b;
+  --border: #e0e0e0;
+  --code-bg: #f8f8f8;
+  --link: #e74c3c;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+  min-height: 100vh;
+}
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: transform 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.search-container {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.search-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.search-tab {
+  flex: 1;
+  padding: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.search-tab:hover { border-color: var(--accent); color: var(--text); }
+.search-tab.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+#searchInput {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+#searchInput:focus { border-color: var(--accent); }
+.toc {
+  list-style: none;
+  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+.nav-chapter {
+  padding: 10px 16px 4px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.nav-chapter:hover { color: var(--accent); }
+.nav-chapter .arrow {
+  transition: transform 0.2s;
+  font-size: 10px;
+}
+.nav-chapter.open .arrow { transform: rotate(90deg); }
+.nav-sections {
+  list-style: none;
+  display: none;
+  padding: 0 0 8px 0;
+}
+.nav-sections.open { display: block; }
+.nav-sections li {
+  padding: 4px 16px 4px 32px;
+  font-size: 13px;
+  color: var(--text-light);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-sections li:hover { color: var(--accent); background: rgba(231,76,60,0.05); }
+.nav-sections li.active { color: var(--accent); background: rgba(231,76,60,0.1); }
+.nav-chapter.hidden { display: none; }
+.nav-sections li.hidden { display: none; }
+.search-results {
+  list-style: none;
+  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+  display: none;
+}
+.search-results.open { display: block; }
+.search-result {
+  padding: 10px 16px;
+  margin: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.search-result:hover { background: rgba(231,76,60,0.08); }
+.search-result .ch-label {
+  font-size: 11px;
+  color: var(--text-light);
+}
+.search-result .snippet {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.search-no-result {
+  padding: 20px 16px;
+  font-size: 13px;
+  color: var(--text-light);
+  text-align: center;
+}
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  padding: 40px 60px;
+  max-width: 900px;
+}
+.chapter { margin-bottom: 60px; }
+.chapter-title {
+  font-size: 28px;
+  color: var(--accent);
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 30px;
+}
+.section { margin-bottom: 40px; }
+.section-title {
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-left: 12px;
+  border-left: 3px solid var(--accent);
+}
+h1 { font-size: 26px; margin: 24px 0 16px; color: var(--accent); }
+h2 { font-size: 22px; margin: 20px 0 12px; color: var(--text); }
+h3 { font-size: 18px; margin: 16px 0 10px; color: var(--text); }
+h4 { font-size: 16px; margin: 12px 0 8px; }
+p { margin: 8px 0; }
+ul, ol { margin: 8px 0; padding-left: 24px; }
+li { margin: 4px 0; }
+code {
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: "SF Mono", Monaco, "Courier New", monospace;
+}
+pre {
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+mark {
+  background: rgba(231,76,60,0.15);
+  color: var(--accent);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+  font-size: 16px;
+}
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 12px; left: 12px;
+  z-index: 200;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 18px;
+  cursor: pointer;
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; padding: 60px 20px 20px; }
+  .menu-toggle { display: block; }
+}
+</style>
+</head>
+<body>
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')"></button>
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">RocketMQ 教程</div>
+  <div class="search-container">
+    <div class="search-tabs">
+      <button class="search-tab active" data-mode="toc" onclick="switchMode('toc')">按章节</button>
+      <button class="search-tab" data-mode="fulltext" onclick="switchMode('fulltext')">全文检索</button>
+    </div>
+    <input type="text" id="searchInput" placeholder="搜索章节..." oninput="onSearch(this.value)">
+  </div>
+  <ul class="toc" id="tocList"></ul>
+  <ul class="search-results" id="searchResults"></ul>
+</nav>
+<main class="main" id="content"></main>
+<script>
+const navData = [{"id": "chapter-0", "title": "第1章 RocketMQ概述", "sections": [{"id": "chapter-0-section-0", "title": "一、MQ概述"}, {"id": "chapter-0-section-1", "title": "1、MQ简介"}, {"id": "chapter-0-section-2", "title": "2、MQ用途"}, {"id": "chapter-0-section-3", "title": "3、常见MQ产品"}, {"id": "chapter-0-section-4", "title": "4、MQ常见协议"}, {"id": "chapter-0-section-5", "title": "二、RocketMQ概述"}, {"id": "chapter-0-section-6", "title": "1、RocketMQ简介"}, {"id": "chapter-0-section-7", "title": "2、RocketMQ发展历程"}]}, {"id": "chapter-1", "title": "第2章 RocketMQ的安装与启动", "sections": [{"id": "chapter-1-section-0", "title": "一、基本概念"}, {"id": "chapter-1-section-1", "title": "二、系统架构"}, {"id": "chapter-1-section-2", "title": "三、单机安装与启动"}, {"id": "chapter-1-section-3", "title": "2、修改初始内存"}, {"id": "chapter-1-section-4", "title": "3、启动"}, {"id": "chapter-1-section-5", "title": "4、发送/接收消息测试"}, {"id": "chapter-1-section-6", "title": "5、关闭Server"}, {"id": "chapter-1-section-7", "title": "四、控制台的安装与启动"}, {"id": "chapter-1-section-8", "title": "五、集群搭建理论"}, {"id": "chapter-1-section-9", "title": "六、磁盘阵列RAID（补充）"}, {"id": "chapter-1-section-10", "title": "七、集群搭建实践"}, {"id": "chapter-1-section-11", "title": "八、mqadmin命令"}]}, {"id": "chapter-2", "title": "第3章 RocketMQ工作原理", "sections": [{"id": "chapter-2-section-0", "title": "一、消息的生产"}, {"id": "chapter-2-section-1", "title": "二、消息的存储"}, {"id": "chapter-2-section-2", "title": "三、indexFile"}, {"id": "chapter-2-section-3", "title": "四、消息的消费"}, {"id": "chapter-2-section-4", "title": "五、订阅关系的一致性"}, {"id": "chapter-2-section-5", "title": "六、offset管理"}, {"id": "chapter-2-section-6", "title": "七、消费幂等"}, {"id": "chapter-2-section-7", "title": "八、消息堆积与消费延迟"}, {"id": "chapter-2-section-8", "title": "九、消息的清理"}]}, {"id": "chapter-3", "title": "第4章 RocketMQ应用", "sections": [{"id": "chapter-3-section-0", "title": "一、普通消息"}, {"id": "chapter-3-section-1", "title": "二、顺序消息"}, {"id": "chapter-3-section-2", "title": "三、延时消息"}, {"id": "chapter-3-section-3", "title": "四、事务消息"}, {"id": "chapter-3-section-4", "title": "五、批量消息"}, {"id": "chapter-3-section-5", "title": "六、消息过滤"}, {"id": "chapter-3-section-6", "title": "七、消息发送重试机制"}, {"id": "chapter-3-section-7", "title": "八、消息消费重试机制"}, {"id": "chapter-3-section-8", "title": "九、死信队列"}]}];
+const searchIndex = [{"sid": "chapter-0-section-0", "ch": "第1章 RocketMQ概述", "sec": "一、MQ概述", "t": ""}, {"sid": "chapter-0-section-1", "ch": "第1章 RocketMQ概述", "sec": "1、MQ简介", "t": "mq，message queue，是一种提供消息队列服务的中间件，也称为消息中间件，是一套提供了消息生 产、存储、消费全过程api的软件系统。消息即数据。一般消息的体量不会很大。"}, {"sid": "chapter-0-section-2", "ch": "第1章 RocketMQ概述", "sec": "2、MQ用途", "t": "从网上可以查看到很多的关于mq用途的叙述，但总结起来其实就以下三点。 限流削峰 mq可以将系统的超量请求暂存其中，以便系统后期可以慢慢进行处理，从而避免了请求的丢失或系统 被压垮。 异步解耦 上游系统对下游系统的调用若为同步调用，则会大大降低系统的吞吐量与并发度，且系统耦合度太高。 而异步调用则会解决这些问题。所以两层之间若要实现由同步到异步的转化，一般性做法就是，在这两 层间添加一个mq层。 数据收集 分布式系统会产生海量级数据流，如：业务日志、监控数据、用户行为等。针对这些数据流进行实时或 批量采集汇总，然后对这些数据流进行大数据分析，这是当前互联网平台的必备技术。通过mq完成此 类数据收集是最好的选择。"}, {"sid": "chapter-0-section-3", "ch": "第1章 RocketMQ概述", "sec": "3、常见MQ产品", "t": "activemq activemq是使用java语言开发一款mq产品。早期很多公司与项目中都在使用。但现在的社区活跃度已 经很低。现在的项目中已经很少使用了。 rabbitmq rabbitmq是使用erlang语言开发的一款mq产品。其吞吐量较kafka与rocketmq要低，且由于其不是 java语言开发，所以公司内部对其实现定制化开发难度较大。 kafka kafka是使用scala/java语言开发的一款mq产品。其最大的特点就是高吞吐率，常用于大数据领域的实 时计算、日志采集等场景。其没有遵循任何常见的mq协议，而是使用自研协议。对于spring cloud net(cid:231)ix，其仅支持rabbitmq与kafka。 rocketmq rocketmq是使用java语言开发的一款mq产品。经过数年阿里双11的考验，性能与稳定性非常高。其 没有遵循任何常见的mq协议，而是使用自研协议。对于spring cloud alibaba，其支持rabbitmq、 kafka，但提倡使用rocketmq。 对比 关键词 activemq rabbitmq kafka rocketmq 开发语言 java erlang java java 单机吞吐 万级 万级 十万级 十万级 量 topic - - 百级topic时会影响系统吞吐 千级topic时会影响系统吞吐 量 量 社区活跃 低 高 高 高 度"}, {"sid": "chapter-0-section-4", "ch": "第1章 RocketMQ概述", "sec": "4、MQ常见协议", "t": "一般情况下mq的实现是要遵循一些常规性协议的。常见的协议如下： jms jms，java messaging service（java消息服务）。是java平台上有关mom（message oriented middleware，面向消息的中间件 po/oo/ao）的技术规范，它便于消息系统中的java应用程序进行消 息交换，并且通过提供标准的产生、发送、接收消息的接口，简化企业应用的开发。activemq是该协 议的典型实现。 stomp stomp，streaming text orientated message protocol（面向流文本的消息协议），是一种mom设计 的简单文本协议。stomp提供一个可互操作的连接格式，允许客户端与任意stomp消息代理 （broker）进行交互。activemq是该协议的典型实现，rabbitmq通过插件可以支持该协议。 amqp amqp，advanced message queuing protocol（高级消息队列协议），一个提供统一消息服务的应用 层标准，是应用层协议的一个开放标准，是一种mom设计。基于此协议的客户端与消息中间件可传递 消息，并不受客户端/中间件不同产品，不同开发语言等条件的限制。 rabbitmq是该协议的典型实 现。 mqtt mqtt，message queuing telemetry transport（消息队列遥测传输），是ibm开发的一个即时通讯协 议，是一种二进制协议，主要用于服务器和低功耗iot（物联网）设备间的通信。该协议支持所有平 台，几乎可以把所有联网物品和外部连接起来，被用来当做传感器和致动器的通信协议。 rabbitmq通 过插件可以支持该协议。"}, {"sid": "chapter-0-section-5", "ch": "第1章 RocketMQ概述", "sec": "二、RocketMQ概述", "t": ""}, {"sid": "chapter-0-section-6", "ch": "第1章 RocketMQ概述", "sec": "1、RocketMQ简介", "t": "rocketmq是一个统一消息引擎、轻量级数据处理平台。 rocketmq是⼀款阿⾥巴巴开源的消息中间件。2016年11⽉28⽇，阿⾥巴巴向 apache 软件基⾦会捐赠 rocketmq，成为 apache 孵化项⽬。2017 年 9 ⽉ 25 ⽇，apache 宣布 rocketmq孵化成为 apache 顶 级项⽬（tlp ），成为国内⾸个互联⽹中间件在 apache 上的顶级项⽬。 官⽹地址：http://rocketmq.apache.org"}, {"sid": "chapter-0-section-7", "ch": "第1章 RocketMQ概述", "sec": "2、RocketMQ发展历程", "t": "2007年，阿里开始五彩石项目，notify作为项目中交易核心消息流转系统，应运而生。notify系统是 rocketmq的雏形。 2010年，b2b大规模使用activemq作为阿里的消息内核。阿里急需一个具有海量堆积能力的消息系 统。 2011年初，kafka开源。淘宝中间件团队在对kafka进行了深入研究后，开发了一款新的mq，metaq。 2012年，metaq发展到了v3.0版本，在它基础上进行了进一步的抽象，形成了rocketmq，然后就将其 进行了开源。 2015年，阿里在rocketmq的基础上，又推出了一款专门针对阿里云上用户的消息系统aliware mq。 2016年双十一，rocketmq承载了万亿级消息的流转，跨越了一个新的里程碑。11⽉28⽇，阿⾥巴巴 向 apache 软件基⾦会捐赠 rocketmq，成为 apache 孵化项⽬。 2017 年 9 ⽉ 25 ⽇，apache 宣布 rocketmq孵化成为 apache 顶级项⽬（tlp ），成为国内⾸个互联 ⽹中间件在 apache 上的顶级项⽬。"}, {"sid": "chapter-1-section-0", "ch": "第2章 RocketMQ的安装与启动", "sec": "一、基本概念", "t": "1 消息（message） 消息是指，消息系统所传输信息的物理载体，生产和消费数据的最小单位，每条消息必须属于一个主 题。 2 主题（topic） topic表示一类消息的集合，每个主题包含若干条消息，每条消息只能属于一个主题，是rocketmq进行 消息订阅的基本单位。 topic:message 1:n message:topic 1:1 一个生产者可以同时发送多种topic的消息；而一个消费者只对某种特定的topic感兴趣，即只可以订阅 和消费一种topic的消息。 producer:topic 1:n consumer:topic 1:1 3 标签（tag） 为消息设置的标签，用于同一主题下区分不同类型的消息。来自同一业务单元的消息，可以根据不同业 务目的在同一主题下设置不同标签。标签能够有效地保持代码的清晰度和连贯性，并优化rocketmq提 供的查询系统。消费者可以根据tag实现对不同子主题的不同消费逻辑，实现更好的扩展性。 topic是消息的一级分类，tag是消息的二级分类。 topic：货物 tag=上海 tag=江苏 tag=浙江 ------- 消费者 ----- topic=货物 tag = 上海 topic=货物 tag = 上海|浙江 topic=货物 tag = * 4 队列（queue） 存储消息的物理实体。一个topic中可以包含多个queue，每个queue中存放的就是该topic的消息。一 个topic的queue也被称为一个topic中消息的分区（partition）。 一个topic的queue中的消息只能被一个消费者组中的一个消费者消费。一个queue中的消息不允许同 一个消费者组中的多个消费者同时消费。 在学习参考其它相关资料时，还会看到一个概念：分片（sharding）。分片不同于分区。在rocketmq 中，分片指的是存放相应topic的broker。每个分片中会创建出相应数量的分区，即queue，每个 queue的大小都是相同的。 5 消息标识（messageid/key） rocketmq中每个消息拥有唯一的messageid，且可以携带具有业务标识的key，以方便对消息的查询。 不过需要注意的是，messageid有两个：在生产者send()消息时会自动生成一个messageid（msgid)， 当消息到达broker后，broker也会自动生成一个messageid(offsetmsgid)。msgid、offsetmsgid与key都 称为消息标识。 msgid：由producer端生成，其生成规则为： producerip + 进程pid + messageclientidsetter类的classloader的hashcode + 当前时间 + automicinteger自增计数器 offsetmsgid：由broker端生成，其生成规则为：brokerip + 物理分区的offset（queue中的 偏移量） key：由用户指定的业务相关的唯一标识"}, {"sid": "chapter-1-section-1", "ch": "第2章 RocketMQ的安装与启动", "sec": "二、系统架构", "t": "rocketmq架构上主要分为四部分构成： 1 producer 消息生产者，负责生产消息。producer通过mq的负载均衡模块选择相应的broker集群队列进行消息投 递，投递的过程支持快速失败并且低延迟。 例如，业务系统产生的日志写入到mq的过程，就是消息生产的过程 再如，电商平台中用户提交的秒杀请求写入到mq的过程，就是消息生产的过程 rocketmq中的消息生产者都是以生产者组（producer group）的形式出现的。生产者组是同一类生产 者的集合，这类producer发送相同topic类型的消息。一个生产者组可以同时发送多个主题的消息。 2 consumer 消息消费者，负责消费消息。一个消息消费者会从broker服务器中获取到消息，并对消息进行相关业务 处理。 例如，qos系统从mq中读取日志，并对日志进行解析处理的过程就是消息消费的过程。 再如，电商平台的业务系统从mq中读取到秒杀请求，并对请求进行处理的过程就是消息消费的 过程。 rocketmq中的消息消费者都是以消费者组（consumer group）的形式出现的。消费者组是同一类消 费者的集合，这类consumer消费的是同一个topic类型的消息。消费者组使得在消息消费方面，实现 负载均衡（将一个topic中的不同的queue平均分配给同一个consumer group的不同的consumer，注 意，并不是将消息负载均衡）和容错（一个consmer挂了，该consumer group中的其它consumer可 以接着消费原consumer消费的queue）的目标变得非常容易。 消费者组中consumer的数量应该小于等于订阅topic的queue数量。如果超出queue数量，则多出的 consumer将不能消费消息。 不过，一个topic类型的消息可以被多个消费者组同时消费。 注意， 1）消费者组只能消费一个topic的消息，不能同时消费多个topic消息 2）一个消费者组中的消费者必须订阅完全相同的topic 3 name server 功能介绍 nameserver是一个broker与topic路由的注册中心，支持broker的动态注册与发现。 rocketmq的思想来自于kafka，而kafka是依赖了zookeeper的。所以，在rocketmq的早期版本，即在 metaq v1.0与v2.0版本中，也是依赖于zookeeper的。从metaq v3.0，即rocketmq开始去掉了 zookeeper依赖，使用了自己的nameserver。 主要包括两个功能： broker管理：接受broker集群的注册信息并且保存下来作为路由信息的基本数据；提供心跳检测 机制，检查broker是否还存活。 路由信息管理：每个nameserver中都保存着broker集群的整个路由信息和用于客户端查询的队列 信息。producer和conumser通过nameserver可以获取整个broker集群的路由信息，从而进行消 息的投递和消费。 路由注册 nameserver通常也是以集群的方式部署，不过，nameserver是无状态的，即nameserver集群中的各 个节点间是无差异的，各节点间相互不进行信息通讯。那各节点中的数据是如何进行数据同步的呢？在 broker节点启动时，轮询nameserver列表，与每个nameserver节点建立长连接，发起注册请求。在 nameserver内部维护着⼀个broker列表，用来动态存储broker的信息。 注意，这是与其它像zk、eureka、nacos等注册中心不同的地方。 这种nameserver的无状态方式，有什么优缺点： 优点：nameserver集群搭建简单，扩容简单。 缺点：对于broker，必须明确指出所有nameserver地址。否则未指出的将不会去注册。也正因 为如此，nameserver并不能随便扩容。因为，若broker不重新配置，新增的nameserver对于 broker来说是不可见的，其不会向这个nameserver进行注册。 broker节点为了证明自己是活着的，为了维护与nameserver间的长连接，会将最新的信息以心跳包的 方式上报给nameserver，每30秒发送一次心跳。心跳包中包含 brokerid、broker地址(ip+port)、 broker名称、broker所属集群名称等等。nameserver在接收到心跳包后，会更新心跳时间戳，记录这 个broker的最新存活时间。 路由剔除 由于broker关机、宕机或网络抖动等原因，nameserver没有收到broker的心跳，nameserver可能会将 其从broker列表中剔除。 nameserver中有⼀"}, {"sid": "chapter-1-section-2", "ch": "第2章 RocketMQ的安装与启动", "sec": "三、单机安装与启动", "t": "1 准备工作 软硬件需求 系统要求是64位的，jdk要求是1.8及其以上版本的。 下载rocketmq安装包 将下载的安装包上传到linux。 解压。"}, {"sid": "chapter-1-section-3", "ch": "第2章 RocketMQ的安装与启动", "sec": "2、修改初始内存", "t": "修改runserver.sh 使用vim命令打开bin/runserver.sh文件。现将这些值修改为如下： 修改runbroker.sh 使用vim命令打开bin/runbroker.sh文件。现将这些值修改为如下："}, {"sid": "chapter-1-section-4", "ch": "第2章 RocketMQ的安装与启动", "sec": "3、启动", "t": "启动nameserver 1 nohup sh bin/mqnamesrv &amp; 2 tail -f ~/logs/rocketmqlogs/namesrv.log 启动broker 1 nohup sh bin/mqbroker -n localhost:9876 &amp; 2 tail -f ~/logs/rocketmqlogs/broker.log"}, {"sid": "chapter-1-section-5", "ch": "第2章 RocketMQ的安装与启动", "sec": "4、发送/接收消息测试", "t": "发送消息 1 export namesrv_addr=localhost:9876 2 sh bin/tools.sh org.apache.rocketmq.example.quickstart.producer 接收消息 1 sh bin/tools.sh org.apache.rocketmq.example.quickstart.consumer"}, {"sid": "chapter-1-section-6", "ch": "第2章 RocketMQ的安装与启动", "sec": "5、关闭Server", "t": "无论是关闭name server还是broker，都是使用bin/mqshutdown命令。 1 [root@mqos rocketmq]# sh bin/mqshutdown broker 2 the mqbroker(1740) is running... 3 send shutdown request to mqbroker(1740) ok 4 5 [root@mqos rocketmq]# sh bin/mqshutdown namesrv 6 the mqnamesrv(1692) is running... 7 send shutdown request to mqnamesrv(1692) ok 8 [2]+ 退出 143 nohup sh bin/mqbroker -n localhost:9876"}, {"sid": "chapter-1-section-7", "ch": "第2章 RocketMQ的安装与启动", "sec": "四、控制台的安装与启动", "t": "rocketmq有一个可视化的dashboard，通过该控制台可以直观的查看到很多数据。 1 下载 下载地址：https://github.com/apache/rocketmq-externals/releases 2 修改配置 修改其src/main/resources中的application.properties配置文件。 原来的端口号为8080，修改为一个不常用的 指定rocketmq的name server地址 3 添加依赖 在解压目录rocketmq-console的pom.xml中添加如下jaxb依赖。 jaxb，java architechture for xml binding，用于xml绑定的java技术，是一个业界标准，是一 项可以根据xml schema生成java类的技术。 1 &lt;dependency&gt; 2 &lt;groupid&gt;javax.xml.bind&lt;/groupid&gt; 3 &lt;artifactid&gt;jaxb-api&lt;/artifactid&gt; 4 &lt;version&gt;2.3.0&lt;/version&gt; 5 &lt;/dependency&gt; 6 &lt;dependency&gt; 7 &lt;groupid&gt;com.sun.xml.bind&lt;/groupid&gt; 8 &lt;artifactid&gt;jaxb-impl&lt;/artifactid&gt; 9 &lt;version&gt;2.3.0&lt;/version&gt; 10 &lt;/dependency&gt; 11 &lt;dependency&gt; 12 &lt;groupid&gt;com.sun.xml.bind&lt;/groupid&gt; 13 &lt;artifactid&gt;jaxb-core&lt;/artifactid&gt; 14 &lt;version&gt;2.3.0&lt;/version&gt; 15 &lt;/dependency&gt; 16 &lt;dependency&gt; 17 &lt;groupid&gt;javax.activation&lt;/groupid&gt; 18 &lt;artifactid&gt;activation&lt;/artifactid&gt; 19 &lt;version&gt;1.1.1&lt;/version&gt; 20 &lt;/dependency&gt; 4 打包 在rocketmq-console目录下运行maven的打包命令。 5 启动 6 访问"}, {"sid": "chapter-1-section-8", "ch": "第2章 RocketMQ的安装与启动", "sec": "五、集群搭建理论", "t": "1 数据复制与刷盘策略 复制策略 复制策略是broker的master与slave间的数据同步方式。分为同步复制与异步复制： 同步复制：消息写入master后，master会等待slave同步数据成功后才向producer返回成功ack 异步复制：消息写入master后，master立即向producer返回成功ack，无需等待slave同步数据成 功 异步复制策略会降低系统的写入延迟，rt变小，提高了系统的吞吐量 刷盘策略 刷盘策略指的是broker中消息的落盘方式，即消息发送到broker内存后消息持久化到磁盘的方式。分为 同步刷盘与异步刷盘： 同步刷盘：当消息持久化到broker的磁盘后才算是消息写入成功。 异步刷盘：当消息写入到broker的内存后即表示消息写入成功，无需等待消息持久化到磁盘。 1）异步刷盘策略会降低系统的写入延迟，rt变小，提高了系统的吞吐量 2）消息写入到broker的内存，一般是写入到了pagecache 3）对于异步 刷盘策略，消息会写入到pagecache后立即返回成功ack。但并不会立即做落盘操 作，而是当pagecache到达一定量时会自动进行落盘。 2 broker集群模式 根据broker集群中各个节点间关系的不同，broker集群可以分为以下几类： 单master 只有一个broker（其本质上就不能称为集群）。这种方式也只能是在测试时使用，生产环境下不能使 用，因为存在单点问题。 多master broker集群仅由多个master构成，不存在slave。同一topic的各个queue会平均分布在各个master节点 上。 优点：配置简单，单个master宕机或重启维护对应用无影响，在磁盘配置为raid10时，即使机器 宕机不可恢复情况下，由于raid10磁盘非常可靠，消息也不会丢（异步刷盘丢失少量消息，同步 刷盘一条不丢），性能最高； 缺点：单台机器宕机期间，这台机器上未被消费的消息在机器恢复之前不可订阅（不可消费）， 消息实时性会受到影响。 以上优点的前提是，这些master都配置了raid磁盘阵列。如果没有配置，一旦出现某master宕 机，则会发生大量消息丢失的情况。 多master多slave模式-异步复制 broker集群由多个master构成，每个master又配置了多个slave（在配置了raid磁盘阵列的情况下，一 个master一般配置一个slave即可）。master与slave的关系是主备关系，即master负责处理消息的读写 请求，而slave仅负责消息的备份与master宕机后的角色切换。 异步复制即前面所讲的复制策略中的异步复制策略，即消息写入master成功后，master立即向 producer返回成功ack，无需等待slave同步数据成功。 该模式的最大特点之一是，当master宕机后slave能够自动切换为master。不过由于slave从master的同 步具有短暂的延迟（毫秒级），所以当master宕机后，这种异步复制方式可能会存在少量消息的丢失问 题。 slave从master同步的延迟越短，其可能丢失的消息就越少 对于master的raid磁盘阵列，若使用的也是异步复制策略，同样也存在延迟问题，同样也可能 会丢失消息。但raid阵列的秘诀是微秒级的（因为是由硬盘支持的），所以其丢失的数据量会 更少。 多master多slave模式-同步双写 该模式是多master多slave模式的同步复制实现。所谓同步双写，指的是消息写入master成功后， master会等待slave同步数据成功后才向producer返回成功ack，即master与slave都要写入成功后才会 返回成功ack，也即双写。 该模式与异步复制模式相比，优点是消息的安全性更高，不存在消息丢失的情况。但单个消息的rt略 高，从而导致性能要略低（大约低10%）。 该模式存在一个大的问题：对于目前的版本，master宕机后，slave不会自动切换到master。 最佳实践 一般会为master配置raid10磁盘阵列，然后再为其配置一个slave。即利用了raid10磁盘阵列的高 效、安全性，又解决了可能会影响订阅的问题。 1）raid磁盘阵列的效率要高于master-slave集群。因为raid是硬件支持的。也正因为如此， 所以raid阵列的搭建成本较高。 2）多master+raid阵列，与多master多slave集群的区别是什么？ 多master+raid阵列，其仅仅可以保证数据不丢失，即不影响消息写入，但其可能会影响到 消息的订阅。但其执行效率要远高于多master多slave集群 多master多slave集群，其不仅可以保证数据不丢失，也不会影响消息写入。其运行效"}, {"sid": "chapter-1-section-9", "ch": "第2章 RocketMQ的安装与启动", "sec": "六、磁盘阵列RAID（补充）", "t": "1 raid历史 1988 年美国加州大学伯克利分校的 d. a. patterson 教授等首次在论文 “a case of redundant array of inexpensive disks” 中提出了 raid 概念 ，即廉价冗余磁盘阵列（ redundant array of inexpensive disks ）。由于当时大容量磁盘比较昂贵， raid 的基本思想是将多个容量较小、相对廉价的磁盘进行 有机组合，从而以较低的成本获得与昂贵大容量磁盘相当的容量、性能、可靠性。随着磁盘成本和价格 的不断降低， “廉价” 已经毫无意义。因此， raid 咨询委员会（ raid advisory board, rab ）决定用 “ 独立 ” 替代 “ 廉价 ” ，于时 raid 变成了独立磁盘冗余阵列（ redundant array of independent disks ）。但这仅仅是名称的变化，实质内容没有改变。 内存：32m 6.4g（ibm 10.1g） 2 raid等级 raid 这种设计思想很快被业界接纳， raid 技术作为高性能、高可靠的存储技术，得到了非常广泛的 应用。 raid 主要利用镜像、数据条带和数据校验三种技术来获取高性能、可靠性、容错能力和扩展 性，根据对这三种技术的使用策略和组合架构，可以把 raid 分为不同的等级，以满足不同数据应用的 需求。 d. a. patterson 等的论文中定义了 raid0 ~ raid6 原始 raid 等级。随后存储厂商又不断推出 raid7 、 raid10、raid01 、 raid50 、 raid53 、 raid100 等 raid 等级，但这些并无统一的标准。目前 业界与学术界公认的标准是 raid0 ~ raid6 ，而在实际应用领域中使用最多的 raid 等级是 raid0 、 raid1 、 raid3 、 raid5 、 raid6 和 raid10。 raid 每一个等级代表一种实现方法和技术，等级之间并无高低之分。在实际应用中，应当根据用户的 数据应用特点，综合考虑可用性、性能和成本来选择合适的 raid 等级，以及具体的实现方式。 3 关键技术 镜像技术 镜像技术是一种冗余技术，为磁盘提供数据备份功能，防止磁盘发生故障而造成数据丢失。对于 raid 而言，采用镜像技术最典型地的用法就是，同时在磁盘阵列中产生两个完全相同的数据副本，并且分布 在两个不同的磁盘上。镜像提供了完全的数据冗余能力，当一个数据副本失效不可用时，外部系统仍可 正常访问另一副本，不会对应用系统运行和性能产生影响。而且，镜像不需要额外的计算和校验，故障 修复非常快，直接复制即可。镜像技术可以从多个副本进行并发读取数据，提供更高的读 i/o 性能，但 不能并行写数据，写多个副本通常会导致一定的 i/o 性能下降。 镜像技术提供了非常高的数据安全性，其代价也是非常昂贵的，需要至少双倍的存储空间。高成本限制 了镜像的广泛应用，主要应用于至关重要的数据保护，这种场合下的数据丢失可能会造成非常巨大的损 失。 数据条带技术 数据条带化技术是一种自动将 i/o操作负载均衡到多个物理磁盘上的技术。更具体地说就是，将一块连 续的数据分成很多小部分并把它们分别存储到不同磁盘上。这就能使多个进程可以并发访问数据的多个 不同部分，从而获得最大程度上的 i/o 并行能力，极大地提升性能。 数据校验技术 数据校验技术是指， raid 要在写入数据的同时进行校验计算，并将得到的校验数据存储在 raid 成员 磁盘中。校验数据可以集中保存在某个磁盘或分散存储在多个不同磁盘中。当其中一部分数据出错时， 就可以对剩余数据和校验数据进行反校验计算重建丢失的数据。 数据校验技术相对于镜像技术的优势在于节省大量开销，但由于每次数据读写都要进行大量的校验运 算，对计算机的运算速度要求很高，且必须使用硬件 raid 控制器。在数据重建恢复方面，检验技术比 镜像技术复杂得多且慢得多。 4 raid分类 从实现角度看， raid 主要分为软 raid、硬 raid 以及混合 raid 三种。 软 raid 所有功能均有操作系统和 cpu 来完成，没有独立的 raid 控制处理芯片和 i/o 处理芯片，效率自然最 低。 硬 raid 配备了专门的 raid 控制处理芯片和 i/o 处理芯片以及阵列缓冲，不占用 cpu 资源。效率很高，但成 本也很高。 混合 raid 具备 raid 控制处理芯片，但没有专门的i/o 处理芯片，需要 cpu 和驱动程序来完成。性能和成本在软 raid 和硬 raid 之间。 5 常见raid等级详解 jbod jbod ，just a bunch of disks，磁盘簇。表"}, {"sid": "chapter-1-section-10", "ch": "第2章 RocketMQ的安装与启动", "sec": "七、集群搭建实践", "t": "1 集群架构 这里要搭建一个双主双从异步复制的broker集群。为了方便，这里使用了两台主机来完成集群的搭建。 这两台主机的功能与broker角色分配如下表。 序号 主机名/ip ip 功能 broker角色 1 rocketmqos1 192.168.59.164 nameserver + broker master1 + slave2 2 rocketmqos2 192.168.59.165 nameserver + broker master2 + slave1 2 克隆生成rocketmqos1 克隆rocketmqos主机，并修改配置。指定主机名为rocketmqos1。 3 修改rocketmqos1配置文件 配置文件位置 要修改的配置文件在rocketmq解压目录的conf/2m-2s-async目录中。 修改broker-a.properties 将该配置文件内容修改为如下： 1 # 指定整个broker集群的名称，或者说是rocketmq集群的名称 2 brokerclustername=defaultcluster 3 # 指定master-slave集群的名称。一个rocketmq集群可以包含多个master-slave集群 4 brokername=broker-a 5 # master的brokerid为0 6 brokerid=0 7 # 指定删除消息存储过期文件的时间为凌晨4点 8 deletewhen=04 9 # 指定未发生更新的消息存储文件的保留时长为48小时，48小时后过期，将会被删除 10 filereservedtime=48 11 # 指定当前broker为异步复制master 12 brokerrole=async_master 13 # 指定刷盘策略为异步刷盘 14 flushdisktype=async_flush 15 # 指定name server的地址 16 namesrvaddr=192.168.59.164:9876;192.168.59.165:9876 修改broker-b-s.properties 将该配置文件内容修改为如下： 1 brokerclustername=defaultcluster 2 # 指定这是另外一个master-slave集群 3 brokername=broker-b 4 # slave的brokerid为非0 5 brokerid=1 6 deletewhen=04 7 filereservedtime=48 8 # 指定当前broker为slave 9 brokerrole=slave 10 flushdisktype=async_flush 11 namesrvaddr=192.168.59.164:9876;192.168.59.165:9876 12 # 指定broker对外提供服务的端口，即broker与producer与consumer通信的端口。默认 10911。由于当前主机同时充当着master1与slave2，而前面的master1使用的是默认端口。这 里需要将这两个端口加以区分，以区分出master1与slave2 13 listenport=11911 14 # 指定消息存储相关的路径。默认路径为~/store目录。由于当前主机同时充当着master1与 slave2，master1使用的是默认路径，这里就需要再指定一个不同路径 15 storepathrootdir=~/store-s 16 storepathcommitlog=~/store-s/commitlog 17 storepathconsumequeue=~/store-s/consumequeue 18 storepathindex=~/store-s/index 19 storecheckpoint=~/store-s/checkpoint 20 abortfile=~/store-s/abort 其它配置 除了以上配置外，这些配置文件中还可以设置其它属性。 1 #指定整个broker集群的名称，或者说是rocketmq集群的名称 2 brokerclustername=rocket-ms 3 #指定master-slave集群的名称。一个rocketmq集群可以包含多个master-slave集群 4 brokername=broker-a 5 #0 表示 master，&gt;0 表示 slave 6 brokerid=0 7 #nameserver地址，分号分割 8 namesrvaddr=nameserver1:9876;nameserver2:9876 9 #默认为新建topic所创建的队列数 10 defaulttopicqueuen"}, {"sid": "chapter-1-section-11", "ch": "第2章 RocketMQ的安装与启动", "sec": "八、mqadmin命令", "t": "在mq解压目录的bin目录下有一个mqadmin命令，该命令是一个运维指令，用于对mq的主题，集群， broker 等信息进行管理。 1 修改bin/tools.sh 在运行mqadmin命令之前，先要修改mq解压目录下bin/tools.sh配置的jdk的ext目录位置。本机的ext 目录在/usr/java/jdk1.8.0_161/jre/lib/ext。 使用vim命令打开tools.sh文件，并在java_opt配置的-djava.ext.dirs这一行的后面添加ext的路径。 1 java_opt=\"${java_opt} -server -xms1g -xmx1g -xmn256m - xx:metaspacesize=128m -xx:maxmetaspacesize=128m\" 2 java_opt=\"${java_opt} - djava.ext.dirs=${base_dir}/lib:${java_home}/jre/lib/ext:${java_home}/lib/ ext:/usr/java/jdk1.8.0_161/jre/lib/ext\" 3 java_opt=\"${java_opt} -cp ${classpath}\" 2 运行mqadmin 直接运行该命令，可以看到其可以添加的commands。通过这些commands可以完成很多的功能。 1 [root@mqos rocketmq-all-4.8.0-bin-release]# ./bin/mqadmin 2 the most commonly used mqadmin commands are: 3 updatetopic update or create topic 4 deletetopic delete topic from broker and nameserver. 5 updatesubgroup update or create subscription group 6 deletesubgroup delete subscription group from broker. 7 updatebrokerconfig update broker's config 8 updatetopicperm update topic perm 9 topicroute examine topic route info 10 topicstatus examine topic status info 11 topicclusterlist get cluster info for topic 12 brokerstatus fetch broker runtime status data 13 querymsgbyid query message by id 14 querymsgbykey query message by key 15 querymsgbyuniquekey query message by unique key 16 querymsgbyoffset query message by offset 17 querymsgtracebyid query a message trace 18 printmsg print message detail 19 printmsgbyqueue print message detail 20 sendmsgstatus send msg to broker. 21 brokerconsumestats fetch broker consume stats data 22 producerconnection query producer's socket connection and client version 23 consumerconnection query consumer's socket connection, client version and subscription 24 consumerprogress query consumers's progress, speed 25 consumerstatus query consumer's internal data structure 26 clonegroupoffset clone offset from other group. 27 clusterlist list all of clusters 28 topiclist fetch all topic list from name server 29 updatekvconfig create or update kv config. 3"}, {"sid": "chapter-2-section-0", "ch": "第3章 RocketMQ工作原理", "sec": "一、消息的生产", "t": "1 消息的生产过程 producer可以将消息写入到某broker中的某queue中，其经历了如下过程： producer发送消息之前，会先向nameserver发出获取消息topic的路由信息的请求 nameserver返回该topic的路由表及broker列表 producer根据代码中指定的queue选择策略，从queue列表中选出一个队列，用于后续存储消息 produer对消息做一些特殊处理，例如，消息本身超过4m，则会对其进行压缩 producer向选择出的queue所在的broker发出rpc请求，将消息发送到选择出的queue 路由表：实际是一个map，key为topic名称，value是一个queuedata实例列表。queuedata并不 是一个queue对应一个queuedata，而是一个broker中该topic的所有queue对应一个 queuedata。即，只要涉及到该topic的broker，一个broker对应一个queuedata。queuedata中 包含brokername。简单来说，路由表的key为topic名称，value则为所有涉及该topic的 brokername列表。 broker列表：其实际也是一个map。key为brokername，value为brokerdata。一个broker对应一 个brokerdata实例，对吗？不对。一套brokername名称相同的master-slave小集群对应一个 brokerdata。brokerdata中包含brokername及一个map。该map的key为brokerid，value为该 broker对应的地址。brokerid为0表示该broker为master，非0表示slave。 2 queue选择算法 对于无序消息，其queue选择算法，也称为消息投递算法，常见的有两种： 轮询算法 默认选择算法。该算法保证了每个queue中可以均匀的获取到消息。 该算法存在一个问题：由于某些原因，在某些broker上的queue可能投递延迟较严重。从而导致 producer的缓存队列中出现较大的消息积压，影响消息的投递性能。 最小投递延迟算法 该算法会统计每次消息投递的时间延迟，然后根据统计出的结果将消息投递到时间延迟最小的queue。 如果延迟相同，则采用轮询算法投递。该算法可以有效提升消息的投递性能。 该算法也存在一个问题：消息在queue上的分配不均匀。投递延迟小的queue其可能会存在大量 的消息。而对该queue的消费者压力会增大，降低消息的消费能力，可能会导致mq中消息的堆 积。"}, {"sid": "chapter-2-section-1", "ch": "第3章 RocketMQ工作原理", "sec": "二、消息的存储", "t": "rocketmq中的消息存储在本地文件系统中，这些相关文件默认在当前用户主目录下的store目录中。 abort：该文件在broker启动后会自动创建，正常关闭broker，该文件会自动消失。若在没有启动 broker的情况下，发现这个文件是存在的，则说明之前broker的关闭是非正常关闭。 checkpoint：其中存储着commitlog、consumequeue、index文件的最后刷盘时间戳 commitlog：其中存放着commitlog文件，而消息是写在commitlog文件中的 con(cid:230)g：存放着broker运行期间的一些配置数据 consumequeue：其中存放着consumequeue文件，队列就存放在这个目录中 index：其中存放着消息索引文件indexfile lock：运行期间使用到的全局资源锁 1 commitlog文件 说明：在很多资料中commitlog目录中的文件简单就称为commitlog文件。但在源码中，该文件 被命名为mappedfile。 目录与文件 commitlog目录中存放着很多的mappedfile文件，当前broker中的所有消息都是落盘到这些 mappedfile文件中的。mappedfile文件大小为1g（小于等于1g），文件名由20位十进制数构成，表示 当前文件的第一条消息的起始位移偏移量。 第一个文件名一定是20位0构成的。因为第一个文件的第一条消息的偏移量commitlog offset为0 当第一个文件放满时，则会自动生成第二个文件继续存放消息。假设第一个文件大小是 1073741820字节（1g = 1073741824字节），则第二个文件名就是00000000001073741824。 以此类推，第n个文件名应该是前n-1个文件大小之和。 一个broker中所有mappedfile文件的commitlog offset是连续的 需要注意的是，一个broker中仅包含一个commitlog目录，所有的mappedfile文件都是存放在该目录中 的。即无论当前broker中存放着多少topic的消息，这些消息都是被顺序写入到了mappedfile文件中 的。也就是说，这些消息在broker中存放时并没有被按照topic进行分类存放。 mappedfile文件是顺序读写的文件，所有其访问效率很高 无论是ssd磁盘还是sata磁盘，通常情况下，顺序存取效率都会高于随机存取。 消息单元 mappedfile文件内容由一个个的消息单元构成。每个消息单元中包含消息总长度msglen、消息的物理 位置physicaloffset、消息体内容body、消息体长度bodylength、消息主题topic、topic长度 topiclength、消息生产者bornhost、消息发送时间戳borntimestamp、消息所在的队列queueid、消 息在queue中存储的偏移量queueoffset等近20余项消息相关属性。 需要注意到，消息单元中是包含queue相关属性的。所以，我们在后续的学习中，就需要十分 留意commitlog与queue间的关系是什么？ 一个mappedfile文件中第m+1个消息单元的commitlog offset偏移量 l(m+1) = l(m) + msglen(m) (m &gt;= 0) 2 consumequeue 目录与文件 为了提高效率，会为每个topic在~/store/consumequeue中创建一个目录，目录名为topic名称。在该 topic目录下，会再为每个该topic的queue建立一个目录，目录名为queueid。每个目录中存放着若干 consumequeue文件，consumequeue文件是commitlog的索引文件，可以根据consumequeue定位到具 体的消息。 consumequeue文件名也由20位数字构成，表示当前文件的第一个索引条目的起始位移偏移量。与 mappedfile文件名不同的是，其后续文件名是固定的。因为consumequeue文件大小是固定不变的。 索引条目 每个consumequeue文件可以包含30w个索引条目，每个索引条目包含了三个消息重要属性：消息在 mappedfile文件中的偏移量commitlog offset、消息长度、消息tag的hashcode值。这三个属性占20 个字节，所以每个文件的大小是固定的30w * 20字节。 一个consumequeue文件中所有消息的topic一定是相同的。但每条消息的tag可能是不同的。 3 对文件的读写 消息写入 一条消息进入到broker后经历了以下几个过程才最终被持久化。 broker根据queueid，获取到该消"}, {"sid": "chapter-2-section-2", "ch": "第3章 RocketMQ工作原理", "sec": "三、indexFile", "t": "除了通过通常的指定topic进行消息消费外，rocketmq还提供了根据key进行消息查询的功能。该查询 是通过store目录中的index子目录中的indexfile进行索引实现的快速查询。当然，这个indexfile中的索 引数据是在包含了key的消息被发送到broker时写入的。如果消息中没有包含key，则不会写入。 1 索引条目结构 每个broker中会包含一组indexfile，每个indexfile都是以一个时间戳命名的（这个indexfile被创建时 的时间戳）。每个indexfile文件由三部分构成：indexheader，slots槽位，indexes索引数据。每个 indexfile文件中包含500w个slot槽。而每个slot槽又可能会挂载很多的index索引单元。 indexheader固定40个字节，其中存放着如下数据： begintimestamp：该indexfile中第一条消息的存储时间 endtimestamp：该indexfile中最后一条消息存储时间 beginphyoffset：该indexfile中第一条消息在commitlog中的偏移量commitlog offset endphyoffset：该indexfile中最后一条消息在commitlog中的偏移量commitlog offset hashslotcount：已经填充有index的slot数量（并不是每个slot槽下都挂载有index索引单元，这 里统计的是所有挂载了index索引单元的slot槽的数量） indexcount：该indexfile中包含的索引单元个数（统计出当前indexfile中所有slot槽下挂载的所 有index索引单元的数量之和） indexfile中最复杂的是slots与indexes间的关系。在实际存储时，indexes是在slots后面的，但为了便 于理解，将它们的关系展示为如下形式： key的hash值 % 500w的结果即为slot槽位，然后将该slot值修改为该index索引单元的indexno，根 据这个indexno可以计算出该index单元在indexfile中的位置。不过，该取模结果的重复率是很高的， 为了解决该问题，在每个index索引单元中增加了preindexno，用于指定该slot中当前index索引单元的 前一个index索引单元。而slot中始终存放的是其下最新的index索引单元的indexno，这样的话，只要 找到了slot就可以找到其最新的index索引单元，而通过这个index索引单元就可以找到其之前的所有 index索引单元。 indexno是一个在indexfile中的流水号，从0开始依次递增。即在一个indexfile中所有indexno是 以此递增的。indexno在index索引单元中是没有体现的，其是通过indexes中依次数出来的。 index索引单元默写20个字节，其中存放着以下四个属性： keyhash：消息中指定的业务key的hash值 phyoffset：当前key对应的消息在commitlog中的偏移量commitlog offset timediff：当前key对应消息的存储时间与当前indexfile创建时间的时间差 preindexno：当前slot下当前index索引单元的前一个index索引单元的indexno 2 indexfile的创建 indexfile的文件名为当前文件被创建时的时间戳。这个时间戳有什么用处呢？ 根据业务key进行查询时，查询条件除了key之外，还需要指定一个要查询的时间戳，表示要查询不大于 该时间戳的最新的消息，即查询指定时间戳之前存储的最新消息。这个时间戳文件名可以简化查询，提 高查询效率。具体后面会详细讲解。 indexfile文件是何时创建的？其创建的条件（时机）有两个： 当第一条带key的消息发送来后，系统发现没有indexfile，此时会创建第一个indexfile文件 当一个indexfile中挂载的index索引单元数量超出2000w个时，会创建新的indexfile。当带key的 消息发送到来后，系统会找到最新的indexfile，并从其indexheader的最后4字节中读取到 indexcount。若indexcount &gt;= 2000w时，会创建新的indexfile。 由于可以推算出，一个indexfile的最大大小是：(40 + 500w 4 + 2000w 20)字节 3 查询流程 当消费者通过业务key来查询相应的消息时，其需要经过一个相对较复杂的查询流程。不过，在分析查 询流程之前，首先要清楚几个定位计算式子： 1 计算指定消息key的slot槽位序号： 2 sl"}, {"sid": "chapter-2-section-3", "ch": "第3章 RocketMQ工作原理", "sec": "四、消息的消费", "t": "消费者从broker中获取消息的方式有两种：pull拉取方式和push推动方式。消费者组对于消息消费的模 式又分为两种：集群消费clustering和广播消费broadcasting。 1 获取消费类型 拉取式消费 consumer主动从broker中拉取消息，主动权由consumer控制。一旦获取了批量消息，就会启动消费过 程。不过，该方式的实时性较弱，即broker中有了新的消息时消费者并不能及时发现并消费。 由于拉取时间间隔是由用户指定的，所以在设置该间隔时需要注意平稳：间隔太短，空请求比 例会增加；间隔太长，消息的实时性太差 推送式消费 该模式下broker收到数据后会主动推送给consumer。该获取方式一般实时性较高。 该获取方式是典型的发布-订阅模式，即consumer向其关联的queue注册了监听器，一旦发现有新的 消息到来就会触发回调的执行，回调方法是consumer去queue中拉取消息。而这些都是基于consumer 与broker间的长连接的。长连接的维护是需要消耗系统资源的。 对比 pull：需要应用去实现对关联queue的遍历，实时性差；但便于应用控制消息的拉取 push：封装了对关联queue的遍历，实时性强，但会占用较多的系统资源 2 消费模式 广播消费 广播消费模式下，相同consumer group的每个consumer实例都接收同一个topic的全量消息。即每条 消息都会被发送到consumer group中的每个consumer。 集群消费 集群消费模式下，相同consumer group的每个consumer实例平均分摊同一个topic的消息。即每条消 息只会被发送到consumer group中的某个consumer。 消息进度保存 广播模式：消费进度保存在consumer端。因为广播模式下consumer group中每个consumer都会 消费所有消息，但它们的消费进度是不同。所以consumer各自保存各自的消费进度。 集群模式：消费进度保存在broker中。consumer group中的所有consumer共同消费同一个topic 中的消息，同一条消息只会被消费一次。消费进度会参与到了消费的负载均衡中，故消费进度是 需要共享的。下图是broker中存放的各个topic的各个queue的消费进度。 3 rebalance机制 rebalance机制讨论的前提是：集群消费。 什么是rebalance rebalance即再均衡，指的是，将⼀个topic下的多个queue在同⼀个consumer group中的多个 consumer间进行重新分配的过程。 rebalance机制的本意是为了提升消息的并行消费能力。例如，⼀个topic下5个队列，在只有1个消费 者的情况下，这个消费者将负责消费这5个队列的消息。如果此时我们增加⼀个消费者，那么就可以给 其中⼀个消费者分配2个队列，给另⼀个分配3个队列，从而提升消息的并行消费能力。 rebalance限制 由于⼀个队列最多分配给⼀个消费者，因此当某个消费者组下的消费者实例数量大于队列的数量时， 多余的消费者实例将分配不到任何队列。 rebalance危害 rebalance的在提升消费能力的同时，也带来一些问题： 消费暂停：在只有一个consumer时，其负责消费所有队列；在新增了一个consumer后会触发 rebalance的发生。此时原consumer就需要暂停部分队列的消费，等到这些队列分配给新的consumer 后，这些暂停消费的队列才能继续被消费。 消费重复：consumer 在消费新分配给自己的队列时，必须接着之前consumer 提交的消费进度的offset 继续消费。然而默认情况下，offset是异步提交的，这个异步性导致提交到broker的offset与consumer 实际消费的消息并不一致。这个不一致的差值就是可能会重复消费的消息。 同步提交：consumer提交了其消费完毕的一批消息的offset给broker后，需要等待broker的成功 ack。当收到ack后，consumer才会继续获取并消费下一批消息。在等待ack期间，consumer 是阻塞的。 异步提交：consumer提交了其消费完毕的一批消息的offset给broker后，不需要等待broker的成 功ack。consumer可以直接获取并消费下一批消息。 对于一次性读取消息的数量，需要根据具体业务场景选择一个相对均衡的是很有必要的。因为 数量过大，系统性能提升了，但产生重复消费的消息数量可能会增加；数量过小，系统性能会 下降，但被重复消费的消息数量可能会减少。 消费突刺：由于rebalance可能导致重复消费，如果需要重复消费的消息过多，"}, {"sid": "chapter-2-section-4", "ch": "第3章 RocketMQ工作原理", "sec": "五、订阅关系的一致性", "t": "订阅关系的一致性指的是，同一个消费者组（group id相同）下所有consumer实例所订阅的topic与 tag及对消息的处理逻辑必须完全一致。否则，消息消费的逻辑就会混乱，甚至导致消息丢失。 1 正确订阅关系 多个消费者组订阅了多个topic，并且每个消费者组里的多个消费者实例的订阅关系保持了一致。 2 错误订阅关系 一个消费者组订阅了多个topic，但是该消费者组里的多个consumer实例的订阅关系并没有保持一致。 订阅了不同topic 该例中的错误在于，同一个消费者组中的两个consumer实例订阅了不同的topic。 consumer实例1-1：（订阅了topic为jodie_test_a，tag为所有的消息） 1 properties properties = new properties(); 2 properties.put(propertykeyconst.group_id, \"gid_jodie_test_1\"); 3 consumer consumer = onsfactory.createconsumer(properties); 4 consumer.subscribe(\"jodie_test_a\", \"*\", new messagelistener() { 5 public action consume(message message, consumecontext context) { 6 system.out.println(message.getmsgid()); 7 return action.commitmessage; 8 } 9 }); consumer实例1-2：（订阅了topic为jodie_test_b，tag为所有的消息） 1 properties properties = new properties(); 2 properties.put(propertykeyconst.group_id, \"gid_jodie_test_1\"); 3 consumer consumer = onsfactory.createconsumer(properties); 4 consumer.subscribe(\"jodie_test_b\", \"*\", new messagelistener() { 5 public action consume(message message, consumecontext context) { 6 system.out.println(message.getmsgid()); 7 return action.commitmessage; 8 } 9 }); 订阅了不同tag 该例中的错误在于，同一个消费者组中的两个consumer订阅了相同topic的不同tag。 consumer实例2-1：（订阅了topic为jodie_test_a，tag为taga的消息） 1 properties properties = new properties(); 2 properties.put(propertykeyconst.group_id, \"gid_jodie_test_2\"); 3 consumer consumer = onsfactory.createconsumer(properties); 4 consumer.subscribe(\"jodie_test_a\", \"taga\", new messagelistener() { 5 public action consume(message message, consumecontext context) { 6 system.out.println(message.getmsgid()); 7 return action.commitmessage; 8 } 9 }); consumer实例2-2：（订阅了topic为jodie_test_a，tag为所有的消息） 1 properties properties = new properties(); 2 properties.put(propertykeyconst.group_id, \"gid_jodie_test_2\"); 3 consumer consumer = onsfactory.createconsumer(properties); 4 consumer.subscribe(\"jodie_test_a\", \"*\", new messagelistener() { 5 public action consume(message message, consumecontext context) { 6 system.out.print"}, {"sid": "chapter-2-section-5", "ch": "第3章 RocketMQ工作原理", "sec": "六、offset管理", "t": "这里的offset指的是consumer的消费进度offset。 消费进度offset是用来记录每个queue的不同消费组的消费进度的。根据消费进度记录器的不同，可以 分为两种模式：本地模式和远程模式。 1 offset本地管理模式 当消费模式为广播消费时，offset使用本地模式存储。因为每条消息会被所有的消费者消费，每个消费 者管理自己的消费进度，各个消费者之间不存在消费进度的交集。 consumer在广播消费模式下offset相关数据以json的形式持久化到consumer本地磁盘文件中，默认文 件路径为当前用户主目录下的.rocketmq_offsets/${clientid}/${group}/offsets.json。 其中${clientid}为当前消费者id，默认为ip@default；${group}为消费者组名称。 2 offset远程管理模式 当消费模式为集群消费时，offset使用远程模式管理。因为所有cosnumer实例对消息采用的是均衡消 费，所有consumer共享queue的消费进度。 consumer在集群消费模式下offset相关数据以json的形式持久化到broker磁盘文件中，文件路径为当前 用户主目录下的store/config/consumeroffset.json。 broker启动时会加载这个文件，并写入到一个双层map（consumeroffsetmanager）。外层map的key 为topic@group，value为内层map。内层map的key为queueid，value为offset。当发生rebalance时， 新的consumer会从该map中获取到相应的数据来继续消费。 集群模式下offset采用远程管理模式，主要是为了保证rebalance机制。 3 offset用途 消费者是如何从最开始持续消费消息的？消费者要消费的第一条消息的起始位置是用户自己通过 consumer.setconsumefromwhere()方法指定的。 在consumer启动后，其要消费的第一条消息的起始位置常用的有三种，这三种位置可以通过枚举类型 常量设置。这个枚举类型为consumefromwhere。 consume_from_last_offset：从queue的当前最后一条消息开始消费 consume_from_first_offset：从queue的第一条消息开始消费 consume_from_timestamp：从指定的具体时间戳位置的消息开始消费。这个具体时间戳 是通过另外一个语句指定的 。 consumer.setconsumetimestamp(“20210701080000”) yyyymmddhhmmss 当消费完一批消息后，consumer会提交其消费进度offset给broker，broker在收到消费进度后会将其更 新到那个双层map（consumeroffsetmanager）及consumeroffset.json文件中，然后向该consumer进 行ack，而ack内容中包含三项数据：当前消费队列的最小offset（minoffset）、最大 offset（maxoffset）、及下次消费的起始offset（nextbeginoffset）。 4 重试队列 当rocketmq对消息的消费出现异常时，会将发生异常的消息的offset提交到broker中的重试队列。系统 在发生消息消费异常时会为当前的topic@group创建一个重试队列，该队列以%retry%开头，到达重 试时间后进行消费重试。 5 offset的同步提交与异步提交 集群消费模式下，consumer消费完消息后会向broker提交消费进度offset，其提交方式分为两种： 同步提交：消费者在消费完一批消息后会向broker提交这些消息的offset，然后等待broker的成功响 应。若在等待超时之前收到了成功响应，则继续读取下一批消息进行消费（从ack中获取 nextbeginoffset）。若没有收到响应，则会重新提交，直到获取到响应。而在这个等待过程中，消费 者是阻塞的。其严重影响了消费者的吞吐量。 异步提交：消费者在消费完一批消息后向broker提交offset，但无需等待broker的成功响应，可以继续 读取并消费下一批消息。这种方式增加了消费者的吞吐量。但需要注意，broker在收到提交的offset 后，还是会向消费者进行响应的。可能还没有收到ack，此时consumer会从broker中直接获取 nextbeginoffset。"}, {"sid": "chapter-2-section-6", "ch": "第3章 RocketMQ工作原理", "sec": "七、消费幂等", "t": "1 什么是消费幂等 当出现消费者对某条消息重复消费的情况时，重复消费的结果与消费一次的结果是相同的，并且多次消 费并未对业务系统产生任何负面影响，那么这个消费过程就是消费幂等的。 幂等：若某操作执行多次与执行一次对系统产生的影响是相同的，则称该操作是幂等的。 在互联网应用中，尤其在网络不稳定的情况下，消息很有可能会出现重复发送或重复消费。如果重复的 消息可能会影响业务处理，那么就应该对消息做幂等处理。 2 消息重复的场景分析 什么情况下可能会出现消息被重复消费呢？最常见的有以下三种情况： 发送时消息重复 当一条消息已被成功发送到broker并完成持久化，此时出现了网络闪断，从而导致broker对producer应 答失败。 如果此时producer意识到消息发送失败并尝试再次发送消息，此时broker中就可能会出现两 条内容相同并且message id也相同的消息，那么后续consumer就一定会消费两次该消息。 消费时消息重复 消息已投递到consumer并完成业务处理，当consumer给broker反馈应答时网络闪断，broker没有接收 到消费成功响应。为了保证消息至少被消费一次的原则，broker将在网络恢复后再次尝试投递之前已 被处理过的消息。此时消费者就会收到与之前处理过的内容相同、message id也相同的消息。 rebalance时消息重复 当consumer group中的consumer数量发生变化时，或其订阅的topic的queue数量发生变化时，会触 发rebalance，此时consumer可能会收到曾经被消费过的消息。 3 通用解决方案 两要素 幂等解决方案的设计中涉及到两项要素：幂等令牌，与唯一性处理。只要充分利用好这两要素，就可以 设计出好的幂等解决方案。 幂等令牌：是生产者和消费者两者中的既定协议，通常指具备唯⼀业务标识的字符串。例如，订 单号、流水号。一般由producer随着消息一同发送来的。 唯一性处理：服务端通过采用⼀定的算法策略，保证同⼀个业务逻辑不会被重复执行成功多次。 例如，对同一笔订单的多次支付操作，只会成功一次。 解决方案 对于常见的系统，幂等性操作的通用性解决方案是： 1. 首先通过缓存去重。在缓存中如果已经存在了某幂等令牌，则说明本次操作是重复性操作；若缓 存没有命中，则进入下一步。 2. 在唯一性处理之前，先在数据库中查询幂等令牌作为索引的数据是否存在。若存在，则说明本次 操作为重复性操作；若不存在，则进入下一步。 3. 在同一事务中完成三项操作：唯一性处理后，将幂等令牌写入到缓存，并将幂等令牌作为唯一索 引的数据写入到db中。 第1步已经判断过是否是重复性操作了，为什么第2步还要再次判断？能够进入第2步，说明已经 不是重复操作了，第2次判断是否重复？ 当然不重复。一般缓存中的数据是具有有效期的。缓存中数据的有效期一旦过期，就是发生缓 存穿透，使请求直接就到达了dbms。 解决方案举例 以支付场景为例： 1. 当支付请求到达后，首先在redis缓存中却获取key为支付流水号的缓存value。若value不空，则 说明本次支付是重复操作，业务系统直接返回调用侧重复支付标识；若value为空，则进入下一步 操作 2. 到dbms中根据支付流水号查询是否存在相应实例。若存在，则说明本次支付是重复操作，业务 系统直接返回调用侧重复支付标识；若不存在，则说明本次操作是首次操作，进入下一步完成唯 一性处理 3. 在分布式事务中完成三项操作： 完成支付任务 将当前支付流水号作为key，任意字符串作为value，通过set(key, value, expiretime)将数 据写入到redis缓存 将当前支付流水号作为主键，与其它相关数据共同写入到dbms 4 消费幂等的实现 消费幂等的解决方案很简单：为消息指定不会重复的唯一标识。因为message id有可能出现重复的情 况，所以真正安全的幂等处理，不建议以message id作为处理依据。最好的方式是以业务唯一标识作为 幂等处理的关键依据，而业务的唯一标识可以通过消息key设置。 以支付场景为例，可以将消息的key设置为订单号，作为幂等处理的依据。具体代码示例如下： 1 message message = new message(); 2 message.setkey(\"orderid_100\"); 3 sendresult sendresult = producer.send(message); 消费者收到消息时可以根据消息的key即订单号来实现消费幂等： 1 consumer.registermessagelistener(new messagelistenerconcurrently() { 2 @override 3 "}, {"sid": "chapter-2-section-7", "ch": "第3章 RocketMQ工作原理", "sec": "八、消息堆积与消费延迟", "t": "1 概念 消息处理流程中，如果consumer的消费速度跟不上producer的发送速度，mq中未处理的消息会越来 越多（进的多出的少），这部分消息就被称为堆积消息。消息出现堆积进而会造成消息的消费延迟。 以下场景需要重点关注消息堆积和消费延迟问题： 业务系统上下游能力不匹配造成的持续堆积，且无法自行恢复。 业务系统对消息的消费实时性要求较高，即使是短暂的堆积造成的消费延迟也无法接受。 2 产生原因分析 consumer使用长轮询pull模式消费消息时，分为以下两个阶段： 消息拉取 consumer通过长轮询pull模式批量拉取的方式从服务端获取消息，将拉取到的消息缓存到本地缓冲队 列中。对于拉取式消费，在内网环境下会有很高的吞吐量，所以这一阶段一般不会成为消息堆积的瓶 颈。 一个单线程单分区的低规格主机(consumer，4c8g)，其可达到几万的tps。如果是多个分区多 个线程，则可以轻松达到几十万的tps。 消息消费 consumer将本地缓存的消息提交到消费线程中，使用业务消费逻辑对消息进行处理，处理完毕后获取 到一个结果。这是真正的消息消费过程。此时consumer的消费能力就完全依赖于消息的消费耗时和消 费并发度了。如果由于业务处理逻辑复杂等原因，导致处理单条消息的耗时较长，则整体的消息吞吐 量肯定不会高，此时就会导致consumer本地缓冲队列达到上限，停止从服务端拉取消息。 结论 消息堆积的主要瓶颈在于客户端的消费能力，而消费能力由消费耗时和消费并发度决定。注意，消费 耗时的优先级要高于消费并发度。即在保证了消费耗时的合理性前提下，再考虑消费并发度问题。 3 消费耗时 影响消息处理时长的主要因素是代码逻辑。而代码逻辑中可能会影响处理时长代码主要有两种类型： cpu内部计算型代码和外部i/o操作型代码。 通常情况下代码中如果没有复杂的递归和循环的话，内部计算耗时相对外部i/o操作来说几乎可以忽 略。所以外部io型代码是影响消息处理时长的主要症结所在。 外部io操作型代码举例： 读写外部数据库，例如对远程mysql的访问 读写外部缓存系统，例如对远程redis的访问 下游系统调用，例如dubbo的rpc远程调用，spring cloud的对下游系统的http接口调用 关于下游系统调用逻辑需要进行提前梳理，掌握每个调用操作预期的耗时，这样做是为了能够 判断消费逻辑中io操作的耗时是否合理。通常消息堆积是由于下游系统出现了服务异常或达到 了dbms容量限制，导致消费耗时增加。 服务异常，并不仅仅是系统中出现的类似500这样的代码错误，而可能是更加隐蔽的问题。例 如，网络带宽问题。 达到了dbms容量限制，其也会引发消息的消费耗时增加。 4 消费并发度 一般情况下，消费者端的消费并发度由单节点线程数和节点数量共同决定，其值为单节点线程数*节点 数量。不过，通常需要优先调整单节点的线程数，若单机硬件资源达到了上限，则需要通过横向扩展 来提高消费并发度。 单节点线程数，即单个consumer所包含的线程数量 节点数量，即consumer group所包含的consumer数量 对于普通消息、延时消息及事务消息，并发度计算都是单节点线程数*节点数量。但对于顺序 消息则是不同的。顺序消息的消费并发度等于topic的queue分区数量。 1）全局顺序消息：该类型消息的topic只有一个queue分区。其可以保证该topic的所有消息被 顺序消费。为了保证这个全局顺序性，consumer group中在同一时刻只能有一个consumer的一 个线程进行消费。所以其并发度为1。 2）分区顺序消息：该类型消息的topic有多个queue分区。其仅可以保证该topic的每个queue 分区中的消息被顺序消费，不能保证整个topic中消息的顺序消费。为了保证这个分区顺序性， 每个queue分区中的消息在consumer group中的同一时刻只能有一个consumer的一个线程进行 消费。即，在同一时刻最多会出现多个queue分蘖有多个consumer的多个线程并行消费。所以 其并发度为topic的分区数量。 5 单机线程数计算 对于一台主机中线程池中线程数的设置需要谨慎，不能盲目直接调大线程数，设置过大的线程数反而会 带来大量的线程切换的开销。理想环境下单节点的最优线程数计算模型为：c *（t1 + t2）/ t1。 c：cpu内核数 t1：cpu内部逻辑计算耗时 t2：外部io操作耗时 最优线程数 = c （t1 + t2）/ t1 = c t1/t1 + c t2/t1 = c + c t2/t1 注意，该计算出的数值是理想状态下的理论数据，在生产环境中，不建议直接使用。而是根据 当前环境，先设置一个比该值小的数值然后观察其压测效果，"}, {"sid": "chapter-2-section-8", "ch": "第3章 RocketMQ工作原理", "sec": "九、消息的清理", "t": "消息被消费过后会被清理掉吗？不会的。 消息是被顺序存储在commitlog文件的，且消息大小不定长，所以消息的清理是不可能以消息为单位进 行清理的，而是以commitlog文件为单位进行清理的。否则会急剧下降清理效率，并实现逻辑复杂。 commitlog文件存在一个过期时间，默认为72小时，即三天。除了用户手动清理外，在以下情况下也 会被自动清理，无论文件中的消息是否被消费过： 文件过期，且到达清理时间点（默认为凌晨4点）后，自动清理过期文件 文件过期，且磁盘空间占用率已达过期清理警戒线（默认75%）后，无论是否达到清理时间点， 都会自动清理过期文件 磁盘占用率达到清理警戒线（默认85%）后，开始按照设定好的规则清理文件，无论是否过期。 默认会从最老的文件开始清理 磁盘占用率达到系统危险警戒线（默认90%）后，broker将拒绝消息写入 需要注意以下几点： 1）对于rocketmq系统来说，删除一个1g大小的文件，是一个压力巨大的io操作。在删除过程 中，系统性能会骤然下降。所以，其默认清理时间点为凌晨4点，访问量最小的时间。也正因如 果，我们要保障磁盘空间的空闲率，不要使系统出现在其它时间点删除commitlog文件的情况。 2）官方建议rocketmq服务的linux文件系统采用ext4。因为对于文件删除操作，ext4要比ext3性 能更好"}, {"sid": "chapter-3-section-0", "ch": "第4章 RocketMQ应用", "sec": "一、普通消息", "t": "1 消息发送分类 producer对于消息的发送方式也有多种选择，不同的方式会产生不同的系统效果。 同步发送消息 同步发送消息是指，producer发出⼀条消息后，会在收到mq返回的ack之后才发下⼀条消息。该方式 的消息可靠性最高，但消息发送效率太低。 异步发送消息 异步发送消息是指，producer发出消息后无需等待mq返回ack，直接发送下⼀条消息。该方式的消息 可靠性可以得到保障，消息发送效率也可以。 单向发送消息 单向发送消息是指，producer仅负责发送消息，不等待、不处理mq的ack。该发送方式时mq也不返 回ack。该方式的消息发送效率最高，但消息可靠性较差。 2 代码举例 创建工程 创建一个maven的java工程rocketmq-test。 导入依赖 导入rocketmq的client依赖。 1 &lt;properties&gt; 2 &lt;project.build.sourceencoding&gt;utf- 8&lt;/project.build.sourceencoding&gt; 3 &lt;maven.compiler.source&gt;1.8&lt;/maven.compiler.source&gt; 4 &lt;maven.compiler.target&gt;1.8&lt;/maven.compiler.target&gt; 5 &lt;/properties&gt; 6 7 &lt;dependencies&gt; 8 &lt;dependency&gt; 9 &lt;groupid&gt;org.apache.rocketmq&lt;/groupid&gt; 10 &lt;artifactid&gt;rocketmq-client&lt;/artifactid&gt; 11 &lt;version&gt;4.8.0&lt;/version&gt; 12 &lt;/dependency&gt; 13 &lt;/dependencies&gt; 定义同步消息发送生产者 1 public class syncproducer { 2 public static void main(string[] args) throws exception { 3 // 创建一个producer，参数为producer group名称 4 defaultmqproducer producer = new defaultmqproducer(\"pg\"); 5 // 指定nameserver地址 6 producer.setnamesrvaddr(\"rocketmqos:9876\"); 7 // 设置当发送失败时重试发送的次数，默认为2次 8 producer.setretrytimeswhensendfailed(3); 9 // 设置发送超时时限为5s，默认3s 10 producer.setsendmsgtimeout(5000); 11 12 // 开启生产者 13 producer.start(); 14 15 // 生产并发送100条消息 16 for (int i = 0; i &lt; 100; i++) { 17 byte[] body = (\"hi,\" + i).getbytes(); 18 message msg = new message(\"sometopic\", \"sometag\", body); 19 // 为消息指定key 20 msg.setkeys(\"key-\" + i); 21 // 发送消息 22 sendresult sendresult = producer.send(msg); 23 system.out.println(sendresult); 24 } 25 // 关闭producer 26 producer.shutdown(); 27 } 28 } 1 // 消息发送的状态 2 public enum sendstatus { 3 send_ok, // 发送成功 4 flush_disk_timeout, // 刷盘超时。当broker设置的刷盘策略为同步刷盘时才可能出 现这种异常状态。异步刷盘不会出现 5 flush_slave_timeout, // slave同步超时。当broker集群设置的master-slave的复 制方式为同步复制时才可能出现这种异常状态。异步复制不会出现 6 slave_not_available, // 没有可用的slave。当broker集群设置为master-slave的 复制方式为同步复制时才可能出现这种异常状态。异步复制不会出现 7 } 定义异步消息发送生产者 1 public class asyncpro"}, {"sid": "chapter-3-section-1", "ch": "第4章 RocketMQ应用", "sec": "二、顺序消息", "t": "1 什么是顺序消息 顺序消息指的是，严格按照消息的发送顺序进行消费的消息(fifo)。 默认情况下生产者会把消息以round robin轮询方式发送到不同的queue分区队列；而消费消息时会从 多个queue上拉取消息，这种情况下的发送和消费是不能保证顺序的。如果将消息仅发送到同一个 queue中，消费时也只从这个queue上拉取消息，就严格保证了消息的顺序性。 2 为什么需要顺序消息 例如，现在有topic order_status(订单状态)，其下有4个queue队列，该topic中的不同消息用于 描述当前订单的不同状态。假设订单有状态：未支付、已支付、发货中、发货成功、发货失败。 根据以上订单状态，生产者从时序上可以生成如下几个消息： 订单t0000001:未支付 --&gt; 订单t0000001:已支付 --&gt; 订单t0000001:发货中 --&gt; 订单 t0000001:发货失败 消息发送到mq中之后，queue的选择如果采用轮询策略，消息在mq的存储可能如下： 这种情况下，我们希望consumer消费消息的顺序和我们发送是一致的，然而上述mq的投递和消费方 式，我们无法保证顺序是正确的。对于顺序异常的消息，consumer即使设置有一定的状态容错，也不 能完全处理好这么多种随机出现组合情况。 基于上述的情况，可以设计如下方案：对于相同订单号的消息，通过一定的策略，将其放置在一个 queue中，然后消费者再采用一定的策略（例如，一个线程独立处理一个queue，保证处理消息的顺序 性），能够保证消费的顺序性。 3 有序性分类 根据有序范围的不同，rocketmq可以严格地保证两种消息的有序性：分区有序与全局有序。 全局有序 当发送和消费参与的queue只有一个时所保证的有序是整个topic中消息的顺序， 称为全局有序。 在创建topic时指定queue的数量。有三种指定方式： 1）在代码中创建producer时，可以指定其自动创建的topic的queue数量 2）在rocketmq可视化控制台中手动创建topic时指定queue数量 3）使用mqadmin命令手动创建topic时指定queue数量 分区有序 如果有多个queue参与，其仅可保证在该queue分区队列上的消息顺序，则称为分区有序。 如何实现queue的选择？在定义producer时我们可以指定消息队列选择器，而这个选择器是我们 自己实现了messagequeueselector接口定义的。 在定义选择器的选择算法时，一般需要使用选择key。这个选择key可以是消息key也可以是其它 数据。但无论谁做选择key，都不能重复，都是唯一的。 一般性的选择算法是，让选择key（或其hash值）与该topic所包含的queue的数量取模，其结果 即为选择出的queue的queueid。 取模算法存在一个问题：不同选择key与queue数量取模结果可能会是相同的，即不同选择key的 消息可能会出现在相同的queue，即同一个consuemr可能会消费到不同选择key的消息。这个问 题如何解决？一般性的作法是，从消息中获取到选择key，对其进行判断。若是当前consumer需 要消费的消息，则直接消费，否则，什么也不做。这种做法要求选择key要能够随着消息一起被 consumer获取到。此时使用消息key作为选择key是比较好的做法。 以上做法会不会出现如下新的问题呢？不属于那个consumer的消息被拉取走了，那么应该消费 该消息的consumer是否还能再消费该消息呢？同一个queue中的消息不可能被同一个group中的 不同consumer同时消费。所以，消费现一个queue的不同选择key的消息的consumer一定属于不 同的group。而不同的group中的consumer间的消费是相互隔离的，互不影响的。 4 代码举例 1 public class orderedproducer { 2 public static void main(string[] args) throws exception { 3 defaultmqproducer producer = new defaultmqproducer(\"pg\"); 4 producer.setnamesrvaddr(\"rocketmqos:9876\"); 5 producer.start(); 6 7 for (int i = 0; i &lt; 100; i++) { 8 integer orderid = i; 9 byte[] body = (\"hi,\" + i).getbytes(); 10 message msg = new message(\"topica\", \"taga\","}, {"sid": "chapter-3-section-2", "ch": "第4章 RocketMQ应用", "sec": "三、延时消息", "t": "1 什么是延时消息 当消息写入到broker后，在指定的时长后才可被消费处理的消息，称为延时消息。 采用rocketmq的延时消息可以实现定时任务的功能，而无需使用定时器。典型的应用场景是，电商交 易中超时未支付关闭订单的场景，12306平台订票超时未支付取消订票的场景。 在电商平台中，订单创建时会发送一条延迟消息。这条消息将会在30分钟后投递给后台业务系 统（consumer），后台业务系统收到该消息后会判断对应的订单是否已经完成支付。如果未完 成，则取消订单，将商品再次放回到库存；如果完成支付，则忽略。 在12306平台中，车票预订成功后就会发送一条延迟消息。这条消息将会在45分钟后投递给后台 业务系统（consumer），后台业务系统收到该消息后会判断对应的订单是否已经完成支付。如 果未完成，则取消预订，将车票再次放回到票池；如果完成支付，则忽略。 2 延时等级 延时消息的延迟时长不支持随意时长的延迟，是通过特定的延迟等级来指定的。延时等级定义在 rocketmq服务端的messagestoreconfig类中的如下变量中： 即，若指定的延时等级为3，则表示延迟时长为10s，即延迟等级是从1开始计数的。 当然，如果需要自定义的延时等级，可以通过在broker加载的配置中新增如下配置（例如下面增加了1 天这个等级1d）。配置文件在rocketmq安装目录下的conf目录中。 1 messagedelaylevel = 1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h 1d 3 延时消息实现原理 具体实现方案是： 修改消息 producer将消息发送到broker后，broker会首先将消息写入到commitlog文件，然后需要将其分发到相 应的consumequeue。不过，在分发之前，系统会先判断消息中是否带有延时等级。若没有，则直接正 常分发；若有则需要经历一个复杂的过程： 修改消息的topic为schedule_topic_xxxx 根据延时等级，在consumequeue目录中schedule_topic_xxxx主题下创建出相应的queueid 目录与consumequeue文件（如果没有这些目录与文件的话）。 延迟等级delaylevel与queueid的对应关系为queueid = delaylevel -1 需要注意，在创建queueid目录时，并不是一次性地将所有延迟等级对应的目录全部创建完毕， 而是用到哪个延迟等级创建哪个目录 修改消息索引单元内容。索引单元中的message tag hashcode部分原本存放的是消息的tag的 hash值。现修改为消息的投递时间。投递时间是指该消息被重新修改为原topic后再次被写入到 commitlog中的时间。投递时间 = 消息存储时间 + 延时等级时间。消息存储时间指的是消息 被发送到broker时的时间戳。 将消息索引写入到schedule_topic_xxxx主题下相应的consumequeue中 schedule_topic_xxxx目录中各个延时等级queue中的消息是如何排序的？ 是按照消息投递时间排序的。一个broker中同一等级的所有延时消息会被写入到consumequeue 目录中schedule_topic_xxxx目录下相同queue中。即一个queue中消息投递时间的延迟等 级时间是相同的。那么投递时间就取决于于消息存储时间了。即按照消息被发送到broker的时 间进行排序的。 投递延时消息 broker内部有⼀个延迟消息服务类scheulemessageservice，其会消费schedule_topic_xxxx中的消 息，即按照每条消息的投递时间，将延时消息投递到⽬标topic中。不过，在投递之前会从commitlog 中将原来写入的消息再次读出，并将其原来的延时等级设置为0，即原消息变为了一条不延迟的普通消 息。然后再次将消息投递到目标topic中。 scheulemessageservice在broker启动时，会创建并启动一个定时器timer，用于执行相应的定时 任务。系统会根据延时等级的个数，定义相应数量的timertask，每个timertask负责一个延迟 等级消息的消费与投递。每个timertask都会检测相应queue队列的第一条消息是否到期。若第 一条消息未到期，则后面的所有消息更不会到期（消息是按照投递时间排序的）；若第一条消 息到期了，则将该消息投递到目标topic，即消费该消息。 将消息重新写入commitlog 延迟消息服务类scheulemessageservice将延迟消息再次发送给了commitlog，并再次形成新的消息索 引条目，分"}, {"sid": "chapter-3-section-3", "ch": "第4章 RocketMQ应用", "sec": "四、事务消息", "t": "1 问题引入 这里的一个需求场景是：工行用户a向建行用户b转账1万元。 我们可以使用同步消息来处理该需求场景： 1. 工行系统发送一个给b增款1万元的同步消息m给broker 2. 消息被broker成功接收后，向工行系统发送成功ack 3. 工行系统收到成功ack后从用户a中扣款1万元 4. 建行系统从broker中获取到消息m 5. 建行系统消费消息m，即向用户b中增加1万元 这其中是有问题的：若第3步中的扣款操作失败，但消息已经成功发送到了broker。对于mq来 说，只要消息写入成功，那么这个消息就可以被消费。此时建行系统中用户b增加了1万元。出 现了数据不一致问题。 2 解决思路 解决思路是，让第1、2、3步具有原子性，要么全部成功，要么全部失败。即消息发送成功后，必须要 保证扣款成功。如果扣款失败，则回滚发送成功的消息。而该思路即使用事务消息。这里要使用分布 式事务解决方案。 使用事务消息来处理该需求场景： 1. 事务管理器tm向事务协调器tc发起指令，开启全局事务 2. 工行系统发一个给b增款1万元的事务消息m给tc 3. tc会向broker发送半事务消息preparehalf，将消息m预提交到broker。此时的建行系统是看 不到broker中的消息m的 4. broker会将预提交执行结果report给tc。 5. 如果预提交失败，则tc会向tm上报预提交失败的响应，全局事务结束；如果预提交成功，tc会 调用工行系统的回调操作，去完成工行用户a的预扣款1万元的操作 6. 工行系统会向tc发送预扣款执行结果，即本地事务的执行状态 7. tc收到预扣款执行结果后，会将结果上报给tm。 预扣款执行结果存在三种可能性： 1 // 描述本地事务执行状态 2 public enum localtransactionstate { 3 commit_message, // 本地事务执行成功 4 rollback_message, // 本地事务执行失败 5 unknow, // 不确定，表示需要进行回查以确定本地事务的执行结果 6 } 8. tm会根据上报结果向tc发出不同的确认指令 若预扣款成功（本地事务状态为commit_message），则tm向tc发送global commit指令 若预扣款失败（本地事务状态为rollback_message），则tm向tc发送global rollback指令 若现未知状态（本地事务状态为unknow），则会触发工行系统的本地事务状态回查操作。回 查操作会将回查结果，即commit_message或rollback_message report给tc。tc将结果上 报给tm，tm会再向tc发送最终确认指令global commit或global rollback 9. tc在接收到指令后会向broker与工行系统发出确认指令 tc接收的若是global commit指令，则向broker与工行系统发送branch commit指令。此时 broker中的消息m才可被建行系统看到；此时的工行用户a中的扣款操作才真正被确认 tc接收到的若是global rollback指令，则向broker与工行系统发送branch rollback指令。此时 broker中的消息m将被撤销；工行用户a中的扣款操作将被回滚 以上方案就是为了确保消息投递与扣款操作能够在一个事务中，要成功都成功，有一个失败， 则全部回滚。 以上方案并不是一个典型的xa模式。因为xa模式中的分支事务是异步的，而事务消息方案中的 消息预提交与预扣款操作间是同步的。 3 基础 分布式事务 对于分布式事务，通俗地说就是，一次操作由若干分支操作组成，这些分支操作分属不同应用，分布在 不同服务器上。分布式事务需要保证这些分支操作要么全部成功，要么全部失败。分布式事务与普通事 务一样，就是为了保证操作结果的一致性。 事务消息 rocketmq提供了类似x/open xa的分布式事务功能，通过事务消息能达到分布式事务的最终一致。xa 是一种分布式事务解决方案，一种分布式事务处理模式。 半事务消息 暂不能投递的消息，发送方已经成功地将消息发送到了broker，但是broker未收到最终确认指令，此时 该消息被标记成“暂不能投递”状态，即不能被消费者看到。处于该种状态下的消息即半事务消息。 本地事务状态 producer回调操作执行的结果为本地事务状态，其会发送给tc，而tc会再发送给tm。tm会根据tc发 送来的本地事务状态来决定全局事务确认指令。 1 // 描述本地事务执行状态 2 public enum localtransactionstate { 3 commit_message, // 本地事务执行成功 4 rollback"}, {"sid": "chapter-3-section-4", "ch": "第4章 RocketMQ应用", "sec": "五、批量消息", "t": "1 批量发送消息 发送限制 生产者进行消息发送时可以一次发送多条消息，这可以大大提升producer的发送效率。不过需要注意以 下几点： 批量发送的消息必须具有相同的topic 批量发送的消息必须具有相同的刷盘策略 批量发送的消息不能是延时消息与事务消息 批量发送大小 默认情况下，一批发送的消息总大小不能超过4mb字节。如果想超出该值，有两种解决方案： 方案一：将批量消息进行拆分，拆分为若干不大于4m的消息集合分多次批量发送 方案二：在producer端与broker端修改属性 ** producer端需要在发送之前设置producer的maxmessagesize属性 ** broker端需要修改其加载的配置文件中的maxmessagesize属性 生产者发送的消息大小 生产者通过send()方法发送的message，并不是直接将message序列化后发送到网络上的，而是通过这 个message生成了一个字符串发送出去的。这个字符串由四部分构成：topic、消息body、消息日志 （占20字节），及用于描述消息的一堆属性key-value。这些属性中包含例如生产者地址、生产时间、 要发送的queueid等。最终写入到broker中消息单元中的数据都是来自于这些属性。 2 批量消费消息 修改批量属性 consumer的messagelistenerconcurrently监听接口的consumemessage()方法的第一个参数为消息列 表，但默认情况下每次只能消费一条消息。若要使其一次可以消费多条消息，则可以通过修改 consumer的consumemessagebatchmaxsize属性来指定。不过，该值不能超过32。因为默认情况下消 费者每次可以拉取的消息最多是32条。若要修改一次拉取的最大值，则可通过修改consumer的 pullbatchsize属性来指定。 存在的问题 consumer的pullbatchsize属性与consumemessagebatchmaxsize属性是否设置的越大越好？当然不 是。 pullbatchsize值设置的越大，consumer每拉取一次需要的时间就会越长，且在网络上传输出现 问题的可能性就越高。若在拉取过程中若出现了问题，那么本批次所有消息都需要全部重新拉 取。 consumemessagebatchmaxsize值设置的越大，consumer的消息并发消费能力越低，且这批被消 费的消息具有相同的消费结果。因为consumemessagebatchmaxsize指定的一批消息只会使用一 个线程进行处理，且在处理过程中只要有一个消息处理异常，则这批消息需要全部重新再次消费 处理。 3 代码举例 该批量发送的需求是，不修改最大发送4m的默认值，但要防止发送的批量消息超出4m的限制。 定义消息列表分割器 1 // 消息列表分割器：其只会处理每条消息的大小不超4m的情况。 2 // 若存在某条消息，其本身大小大于4m，这个分割器无法处理， 3 // 其直接将这条消息构成一个子列表返回。并没有再进行分割 4 public class messagelistsplitter implements iterator&lt;list&lt;message&gt;&gt; { 5 // 指定极限值为4m 6 private final int size_limit = 4 1024 1024; 7 // 存放所有要发送的消息 8 private final list&lt;message&gt; messages; 9 // 要进行批量发送消息的小集合起始索引 10 private int currindex; 11 public messagelistsplitter(list&lt;message&gt; messages) { 12 this.messages = messages; 13 } 14 15 @override 16 public boolean hasnext() { 17 // 判断当前开始遍历的消息索引要小于消息总数 18 return currindex &lt; messages.size(); 19 } 20 21 @override 22 public list&lt;message&gt; next() { 23 int nextindex = currindex; 24 // 记录当前要发送的这一小批次消息列表的大小 25 int totalsize = 0; 26 for (; nextindex &lt; messages.size(); nextindex++) { 27 // 获取当前遍历的消息 28 message message = messa"}, {"sid": "chapter-3-section-5", "ch": "第4章 RocketMQ应用", "sec": "六、消息过滤", "t": "消息者在进行消息订阅时，除了可以指定要订阅消息的topic外，还可以对指定topic中的消息根据指定 条件进行过滤，即可以订阅比topic更加细粒度的消息类型。 对于指定topic消息的过滤有两种过滤方式：tag过滤与sql过滤。 1 tag过滤 通过consumer的subscribe()方法指定要订阅消息的tag。如果订阅多个tag的消息，tag间使用或运算 符(双竖线||)连接。 1 defaultmqpushconsumer consumer = new defaultmqpushconsumer(\"cid_example\"); 2 consumer.subscribe(\"topic\", \"taga || tagb || tagc\"); 2 sql过滤 sql过滤是一种通过特定表达式对事先埋入到消息中的用户属性进行筛选过滤的方式。通过sql过滤， 可以实现对消息的复杂过滤。不过，只有使用push模式的消费者才能使用sql过滤。 sql过滤表达式中支持多种常量类型与运算符。 支持的常量类型： 数值：比如：123，3.1415 字符：必须用单引号包裹起来，比如：'abc' 布尔：true 或 false null：特殊的常量，表示空 支持的运算符有： 数值比较：&gt;，&gt;=，&lt;，&lt;=，between，= 字符比较：=，&lt;&gt;，in 逻辑运算 ：and，or，not null判断：is null 或者 is not null 默认情况下broker没有开启消息的sql过滤功能，需要在broker加载的配置文件中添加如下属性，以开 启该功能： 1 enablepropertyfilter = true 在启动broker时需要指定这个修改过的配置文件。例如对于单机broker的启动，其修改的配置文件是 conf/broker.conf，启动时使用如下命令： 1 sh bin/mqbroker -n localhost:9876 -c conf/broker.conf &amp; 3 代码举例 定义tag过滤producer 1 public class filterbytagproducer { 2 public static void main(string[] args) throws exception { 3 defaultmqproducer producer = new defaultmqproducer(\"pg\"); 4 producer.setnamesrvaddr(\"rocketmqos:9876\"); 5 producer.start(); 6 string[] tags = {\"mytaga\",\"mytagb\",\"mytagc\"}; 7 for (int i = 0; i &lt; 10; i++) { 8 byte[] body = (\"hi,\" + i).getbytes(); 9 string tag = tags[i%tags.length]; 10 message msg = new message(\"mytopic\",tag,body); 11 sendresult sendresult = producer.send(msg); 12 system.out.println(sendresult); 13 } 14 producer.shutdown(); 15 } 16 } 定义tag过滤consumer 1 public class filterbytagconsumer { 2 3 public static void main(string[] args) throws exception { 4 defaultmqpushconsumer consumer = new defaultmqpushconsumer(\"pg\"); 5 consumer.setnamesrvaddr(\"rocketmqos:9876\"); 6 consumer.setconsumefromwhere(consumefromwhere.consume_from_first_offset ); 7 8 consumer.subscribe(\"mytopic\", \"mytaga || mytagb\"); 9 consumer.registermessagelistener(new messagelistenerconcurrently() { 10 @override 11 public consumeconcurrentlystatus consumemessage(list&lt;messageext&gt; msgs, 12 consumeconcurrentlycontext"}, {"sid": "chapter-3-section-6", "ch": "第4章 RocketMQ应用", "sec": "七、消息发送重试机制", "t": "1 说明 producer对发送失败的消息进行重新发送的机制，称为消息发送重试机制，也称为消息重投机制。 对于消息重投，需要注意以下几点： 生产者在发送消息时，若采用同步或异步发送方式，发送失败会重试，但oneway消息发送方式 发送失败是没有重试机制的 只有普通消息具有发送重试机制，顺序消息是没有的 消息重投机制可以保证消息尽可能发送成功、不丢失，但可能会造成消息重复。消息重复在 rocketmq中是无法避免的问题 消息重复在一般情况下不会发生，当出现消息量大、网络抖动，消息重复就会成为大概率事件 producer主动重发、consumer负载变化（发生rebalance，不会导致消息重复，但可能出现重复 消费）也会导致重复消息 消息重复无法避免，但要避免消息的重复消费。 避免消息重复消费的解决方案是，为消息添加唯一标识（例如消息key），使消费者对消息进行消 费判断来避免重复消费 消息发送重试有三种策略可以选择：同步发送失败策略、异步发送失败策略、消息刷盘失败策略 2 同步发送失败策略 对于普通消息，消息发送默认采用round-robin策略来选择所发送到的队列。如果发送失败，默认重试2 次。但在重试时是不会选择上次发送失败的broker，而是选择其它broker。当然，若只有一个broker其 也只能发送到该broker，但其会尽量发送到该broker上的其它queue。 1 // 创建一个producer，参数为producer group名称 2 defaultmqproducer producer = new defaultmqproducer(\"pg\"); 3 // 指定nameserver地址 4 producer.setnamesrvaddr(\"rocketmqos:9876\"); 5 // 设置同步发送失败时重试发送的次数，默认为2次 6 producer.setretrytimeswhensendfailed(3); 7 // 设置发送超时时限为5s，默认3s 8 producer.setsendmsgtimeout(5000); 同时，broker还具有失败隔离功能，使producer尽量选择未发生过发送失败的broker作为目标 broker。其可以保证其它消息尽量不发送到问题broker，为了提升消息发送效率，降低消息发送耗时。 思考：让我们自己实现失败隔离功能，如何来做？ 1）方案一：producer中维护某juc的map集合，其key是发生失败的时间戳，value为broker实 例。producer中还维护着一个set集合，其中存放着所有未发生发送异常的broker实例。选择目 标broker是从该set集合中选择的。再定义一个定时任务，定期从map集合中将长期未发生发送 异常的broker清理出去，并添加到set集合。 2）方案二：为producer中的broker实例添加一个标识，例如是一个atomicboolean属性。只要该 broker上发生过发送异常，就将其置为true。选择目标broker就是选择该属性值为false的 broker。再定义一个定时任务，定期将broker的该属性置为false。 3）方案三：为producer中的broker实例添加一个标识，例如是一个atomiclong属性。只要该 broker上发生过发送异常，就使其值增一。选择目标broker就是选择该属性值最小的broker。若 该值相同，采用轮询方式选择。 如果超过重试次数，则抛出异常，由producer去保证消息不丢。当然当生产者出现 remotingexception、mqclientexception和mqbrokerexception时，producer会自动重投消息。 3 异步发送失败策略 异步发送失败重试时，异步重试不会选择其他broker，仅在同一个broker上做重试，所以该策略无法保 证消息不丢。 1 defaultmqproducer producer = new defaultmqproducer(\"pg\"); 2 producer.setnamesrvaddr(\"rocketmqos:9876\"); 3 // 指定异步发送失败后不进行重试发送 4 producer.setretrytimeswhensendasyncfailed(0); 4 消息刷盘失败策略 消息刷盘超时（master或slave）或slave不可用（slave在做数据同步时向master返回状态不是 send_ok）时，默认是不会将消息尝试发送到其他broker的。不过，对于重要消息可以通过在broker 的配置文件设置retryanotherbrokerwhennotstoreok属性为true来开启。"}, {"sid": "chapter-3-section-7", "ch": "第4章 RocketMQ应用", "sec": "八、消息消费重试机制", "t": "1 顺序消息的消费重试 对于顺序消息，当consumer消费消息失败后，为了保证消息的顺序性，其会自动不断地进行消息重 试，直到消费成功。消费重试默认间隔时间为1000毫秒。重试期间应用会出现消息消费被阻塞的情 况。 1 defaultmqpushconsumer consumer = new defaultmqpushconsumer(\"cg\"); 2 // 顺序消息消费失败的消费重试时间间隔，单位毫秒，默认为1000，其取值范围为[10, 30000] 3 consumer.setsuspendcurrentqueuetimemillis(100); 由于对顺序消息的重试是无休止的，不间断的，直至消费成功，所以，对于顺序消息的消费， 务必要保证应用能够及时监控并处理消费失败的情况，避免消费被永久性阻塞。 注意，顺序消息没有发送失败重试机制，但具有消费失败重试机制 2 无序消息的消费重试 对于无序消息（普通消息、延时消息、事务消息），当consumer消费消息失败时，可以通过设置返回 状态达到消息重试的效果。不过需要注意，无序消息的重试只对集群消费方式生效，广播消费方式不 提供失败重试特性。即对于广播消费，消费失败后，失败消息不再重试，继续消费后续消息。 3 消费重试次数与间隔 对于无序消息集群消费下的重试消费，每条消息默认最多重试16次，但每次重试的间隔时间是不同 的，会逐渐变长。每次重试的间隔时间如下表。 重试次数 与上次重试的间隔时间 重试次数 与上次重试的间隔时间 1 10秒 9 7分钟 2 30秒 10 8分钟 3 1分钟 11 9分钟 4 2分钟 12 10分钟 5 3分钟 13 20分钟 6 4分钟 14 30分钟 7 5分钟 15 1小时 8 6分钟 16 2小时 若一条消息在一直消费失败的前提下，将会在正常消费后的第4小时46分后进行第16次重试。 若仍然失败，则将消息投递到死信队列 修改消费重试次数 1 defaultmqpushconsumer consumer = new defaultmqpushconsumer(\"cg\"); 2 // 修改消费重试次数 3 consumer.setmaxreconsumetimes(10); 对于修改过的重试次数，将按照以下策略执行： 若修改值小于16，则按照指定间隔进行重试 若修改值大于16，则超过16次的重试时间间隔均为2小时 对于consumer group，若仅修改了一个consumer的消费重试次数，则会应用到该group中所有 其它consumer实例。若出现多个consumer均做了修改的情况，则采用覆盖方式生效。即最后被 修改的值会覆盖前面设置的值。 4 重试队列 对于需要重试消费的消息，并不是consumer在等待了指定时长后再次去拉取原来的消息进行消费，而 是将这些需要重试消费的消息放入到了一个特殊topic的队列中，而后进行再次消费的。这个特殊的队 列就是重试队列。 当出现需要进行重试消费的消息时，broker会为每个消费组都设置一个topic名称 为%retry%consumergroup@consumergroup的重试队列。 1）这个重试队列是针对消息才组的，而不是针对每个topic设置的（一个topic的消息可以让多 个消费者组进行消费，所以会为这些消费者组各创建一个重试队列） 2）只有当出现需要进行重试消费的消息时，才会为该消费者组创建重试队列 注意，消费重试的时间间隔与延时消费的延时等级十分相似，除了没有延时等级的前两个时间 外，其它的时间都是相同的 broker对于重试消息的处理是通过延时消息实现的。先将消息保存到schedule_topic_xxxx延迟队 列中，延迟时间到后，会将消息投递到%retry%consumergroup@consumergroup重试队列中。 5 消费重试配置方式 集群消费方式下，消息消费失败后若希望消费重试，则需要在消息监听器接口的实现中明确进行如下三 种方式之一的配置： 方式1：返回consumeconcurrentlystatus.reconsume_later（推荐） 方式2：返回null 方式3：抛出异常 6 消费不重试配置方式 集群消费方式下，消息消费失败后若不希望消费重试，则在捕获到异常后同样也返回与消费成功后的相 同的结果，即consumeconcurrentlystatus.consume_success，则不进行消费重试。"}, {"sid": "chapter-3-section-8", "ch": "第4章 RocketMQ应用", "sec": "九、死信队列", "t": "1 什么是死信队列 当一条消息初次消费失败，消息队列会自动进行消费重试；达到最大重试次数后，若消费依然失败，则 表明消费者在正常情况下无法正确地消费该消息，此时，消息队列不会立刻将消息丢弃，而是将其发送 到该消费者对应的特殊队列中。这个队列就是死信队列（dead-letter queue，dlq），而其中的消息 则称为死信消息（dead-letter message，dlm）。 死信队列是用于处理无法被正常消费的消息的。 2 死信队列的特征 死信队列具有如下特征： 死信队列中的消息不会再被消费者正常消费，即dlq对于消费者是不可见的 死信存储有效期与正常消息相同，均为 3 天（commitlog文件的过期时间），3 天后会被自动删除 死信队列就是一个特殊的topic，名称为%dlq%consumergroup@consumergroup，即每个消 费者组都有一个死信队列 如果⼀个消费者组未产生死信消息，则不会为其创建相应的死信队列 3 死信消息的处理 实际上，当⼀条消息进入死信队列，就意味着系统中某些地方出现了问题，从而导致消费者无法正常消 费该消息，比如代码中原本就存在bug。因此，对于死信消息，通常需要开发人员进行特殊处理。最关 键的步骤是要排查可疑因素，解决代码中可能存在的bug，然后再将原来的死信消息再次进行投递消 费。"}];
+let currentMode = 'toc';
+let currentChapter = -1;
+let observer = null;
+let chapterCache = {};
+let loadingChapter = -1;
+
+function setupObserver() {
+  if (observer) observer.disconnect();
+  observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        document.querySelectorAll('.nav-sections li').forEach(li => li.classList.remove('active'));
+        const active = document.querySelector('[data-section="' + id + '"]');
+        if (active) {
+          active.classList.add('active');
+          const chIdx = id.split('-section-')[0].replace('chapter-', '');
+          const chEl = document.querySelector('[data-chapter="' + chIdx + '"]');
+          if (chEl && !chEl.classList.contains('open')) toggleChapter(chEl);
+        }
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+  document.querySelectorAll('.section').forEach(el => observer.observe(el));
+}
+
+function loadChapter(idx, scrollToId) {
+  if (currentChapter === idx && !scrollToId) return;
+  if (loadingChapter === idx) return;
+  if (chapterCache[idx] !== undefined) { _renderChapter(idx, scrollToId); return; }
+  loadingChapter = idx;
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">加载中...</div>';
+  const script = document.createElement('script');
+  script.src = 'chapter-' + idx + '.js';
+  script.onload = function() {
+    chapterCache[idx] = window._chapterHtml;
+    window._chapterHtml = null;
+    loadingChapter = -1;
+    _renderChapter(idx, scrollToId);
+  };
+  script.onerror = function() {
+    content.innerHTML = '<div class="loading">章节加载失败，请刷新重试</div>';
+    loadingChapter = -1;
+  };
+  document.head.appendChild(script);
+}
+
+function _renderChapter(idx, scrollToId) {
+  const content = document.getElementById('content');
+  content.innerHTML = chapterCache[idx];
+  currentChapter = idx;
+  setupObserver();
+  if (scrollToId) {
+    requestAnimationFrame(() => {
+      const el = document.getElementById(scrollToId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  } else { window.scrollTo(0, 0); }
+}
+
+function buildNav() {
+  const toc = document.getElementById('tocList');
+  let html = '';
+  navData.forEach((ch, i) => {
+    html += '<li>';
+    html += '<div class="nav-chapter" data-chapter="' + i + '" onclick="toggleChapter(this)">';
+    html += '<span class="arrow">▶</span>' + ch.title + '</div>';
+    html += '<ul class="nav-sections" id="nav-ch-' + i + '">';
+    ch.sections.forEach((sec) => {
+      html += '<li data-section="' + sec.id + '" onclick="goToSection(\'' + sec.id + '\')">' + sec.title + '</li>';
+    });
+    html += '</ul></li>';
+  });
+  toc.innerHTML = html;
+}
+
+function toggleChapter(el) {
+  el.classList.toggle('open');
+  const idx = parseInt(el.dataset.chapter);
+  const list = document.getElementById('nav-ch-' + idx);
+  list.classList.toggle('open');
+  if (el.classList.contains('open') && currentChapter !== idx && loadingChapter !== idx) loadChapter(idx);
+}
+
+function goToSection(id) {
+  const chIdx = parseInt(id.split('-section-')[0].replace('chapter-', ''));
+  if (currentChapter !== chIdx) loadChapter(chIdx, id);
+  else { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.querySelectorAll('.nav-sections li').forEach(li => li.classList.remove('active'));
+  const active = document.querySelector('[data-section="' + id + '"]');
+  if (active) active.classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-mode="' + mode + '"]').classList.add('active');
+  const toc = document.getElementById('tocList');
+  const results = document.getElementById('searchResults');
+  const input = document.getElementById('searchInput');
+  if (mode === 'toc') {
+    toc.style.display = '';
+    results.classList.remove('open');
+    results.innerHTML = '';
+    input.placeholder = '搜索章节...';
+    document.querySelectorAll('.nav-chapter').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.nav-sections li').forEach(el => el.classList.remove('hidden'));
+  } else {
+    toc.style.display = 'none';
+    input.placeholder = '搜索正文内容...';
+  }
+  onSearch(input.value);
+}
+
+function onSearch(query) { if (currentMode === 'toc') filterNav(query); else doSearch(query); }
+
+function filterNav(query) {
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll('.nav-chapter').forEach(chEl => {
+    const chTitle = chEl.textContent.replace('▶', '').trim().toLowerCase();
+    const idx = chEl.dataset.chapter;
+    const list = document.getElementById('nav-ch-' + idx);
+    if (!q) { chEl.classList.remove('hidden'); list.querySelectorAll('li').forEach(li => li.classList.remove('hidden')); return; }
+    let hasVisible = false;
+    list.querySelectorAll('li').forEach(li => {
+      const match = li.textContent.toLowerCase().includes(q);
+      li.classList.toggle('hidden', !match);
+      if (match) hasVisible = true;
+    });
+    const chMatch = chTitle.includes(q);
+    if (chMatch || hasVisible) { chEl.classList.remove('hidden'); if (!chEl.classList.contains('open')) toggleChapter(chEl); }
+    else { chEl.classList.add('hidden'); }
+  });
+}
+
+function highlightText(text, query) {
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx < 0) return escapeHtml(text);
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, idx + query.length + 40);
+  let snippet = (start > 0 ? '...' : '') + text.slice(start, end) + (end < text.length ? '...' : '');
+  const si = snippet.toLowerCase().indexOf(query.toLowerCase());
+  return escapeHtml(snippet.slice(0, si)) + '<mark>' + escapeHtml(snippet.slice(si, si + query.length)) + '</mark>' + escapeHtml(snippet.slice(si + query.length));
+}
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function doSearch(query) {
+  const results = document.getElementById('searchResults');
+  const q = query.trim().toLowerCase();
+  if (!q) { results.classList.remove('open'); results.innerHTML = ''; return; }
+  results.classList.add('open');
+  let html = '';
+  let count = 0;
+  const seen = new Set();
+  navData.forEach((ch) => {
+    ch.sections.forEach((sec) => {
+      if (count >= 80) return;
+      if (seen.has(sec.id)) return;
+      if (sec.title.toLowerCase().includes(q) || ch.title.toLowerCase().includes(q)) {
+        seen.add(sec.id);
+        html += '<li class="search-result" onclick="goToSection(\'' + sec.id + '\')">';
+        html += '<div class="ch-label">' + ch.title + '</div>';
+        html += '<strong>' + sec.title + '</strong></li>';
+        count++;
+      }
+    });
+  });
+  searchIndex.forEach((item) => {
+    if (count >= 80) return;
+    if (seen.has(item.sid)) return;
+    if (!item.t.includes(q)) return;
+    seen.add(item.sid);
+    const snippet = highlightText(item.t, q);
+    html += '<li class="search-result" onclick="goToSection(\'' + item.sid + '\')">';
+    html += '<div class="ch-label">' + item.ch + ' › ' + item.sec + '</div>';
+    html += '<div class="snippet">' + snippet + '</div></li>';
+    count++;
+  });
+  if (count === 0) results.innerHTML = '<li class="search-no-result">无匹配结果</li>';
+  else results.innerHTML = html + (count >= 80 ? '<li class="search-no-result">仅显示前 80 条</li>' : '');
+}
+
+buildNav();
+loadChapter(0);
+const firstCh = document.querySelector('[data-chapter="0"]');
+if (firstCh) toggleChapter(firstCh);
+</script>
+</body>
+</html>
