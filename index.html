@@ -165,7 +165,7 @@
 const chapters = [{"page": 0, "title": "第1章 RocketMQ概述", "subheadings": [{"page": 0, "title": "一、MQ概述"}, {"page": 3, "title": "二、RocketMQ概述"}], "endPage": 4}, {"page": 4, "title": "第2章 RocketMQ的安装与启动", "subheadings": [{"page": 4, "title": "一、基本概念"}, {"page": 7, "title": "二、系统架构"}, {"page": 13, "title": "三、单机安装与启动"}, {"page": 16, "title": "四、控制台的安装与启动"}, {"page": 19, "title": "五、集群搭建理论"}, {"page": 23, "title": "六、磁盘阵列RAID"}, {"page": 29, "title": "七、集群搭建实践"}, {"page": 36, "title": "八、mqadmin命令"}], "endPage": 37}, {"page": 37, "title": "第3章 RocketMQ工作原理", "subheadings": [{"page": 37, "title": "一、消息的生产"}, {"page": 40, "title": "二、消息的存储"}, {"page": 44, "title": "三、indexFile"}, {"page": 47, "title": "四、消息的消费"}, {"page": 54, "title": "五、订阅关系的一致性"}, {"page": 59, "title": "六、offset管理"}, {"page": 62, "title": "七、消费幂等"}, {"page": 66, "title": "八、消息堆积与消费延迟"}, {"page": 70, "title": "九、消息的清理"}], "endPage": 67}, {"page": 67, "title": "第4章 RocketMQ应用", "subheadings": [{"page": 67, "title": "一、普通消息"}, {"page": 75, "title": "二、顺序消息"}, {"page": 79, "title": "三、延时消息"}, {"page": 85, "title": "四、事务消息"}, {"page": 96, "title": "五、批量消息"}, {"page": 101, "title": "六、消息过滤"}, {"page": 107, "title": "七、消息发送重试机制"}, {"page": 110, "title": "八、消息消费重试机制"}, {"page": 113, "title": "九、死信队列"}], "endPage": 106}];
 const totalPages = 106;
 let currentPage = 0;
-let currentChapterPage = 0;
+let currentChapterPage = -1;
 let loadedPages = new Set();
 let searchIndex = null;
 let searchDebounceTimer = null;
