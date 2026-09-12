@@ -384,30 +384,21 @@ function prevPage() {
 }
 
 function setupLazyLoading() {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const container = entry.target;
-        const pageIdx = parseInt(container.dataset.page);
-        if (!loadedPages.has(pageIdx)) {
-          loadedPages.add(pageIdx);
-          const img = document.createElement('img');
-          img.src = 'images/page-' + String(pageIdx).padStart(3, '0') + '.webp';
-          img.alt = '第 ' + (pageIdx + 1) + ' 页';
-          img.loading = 'lazy';
-          container.innerHTML = '';
-          container.appendChild(img);
-          const label = document.createElement('div');
-          label.className = 'page-label';
-          label.textContent = '第 ' + (pageIdx + 1) + ' 页';
-          container.appendChild(label);
-          container.classList.remove('loading');
-        }
-        observer.unobserve(container);
-      }
-    });
-  }, { rootMargin: '200px' });
-  document.querySelectorAll('.page-container').forEach(el => observer.observe(el));
+  document.querySelectorAll('.page-container').forEach(container => {
+    const pageIdx = parseInt(container.dataset.page);
+    if (loadedPages.has(pageIdx)) return;
+    loadedPages.add(pageIdx);
+    const img = document.createElement('img');
+    img.src = 'images/page-' + String(pageIdx).padStart(3, '0') + '.webp';
+    img.alt = '第 ' + (pageIdx + 1) + ' 页';
+    container.innerHTML = '';
+    container.appendChild(img);
+    const label = document.createElement('div');
+    label.className = 'page-label';
+    label.textContent = '第 ' + (pageIdx + 1) + ' 页';
+    container.appendChild(label);
+    container.classList.remove('loading');
+  });
 }
 
 document.addEventListener('keydown', e => {
