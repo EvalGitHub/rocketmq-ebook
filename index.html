@@ -1,200 +1,427 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RocketMQ 分布式消息队列教程</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.header {
-  background: #16213e;
-  border-bottom: 1px solid #0f3460;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  z-index: 10;
-}
-.header h1 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #e94560;
-}
-.header-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.header-controls button {
-  background: #0f3460;
-  color: #e0e0e0;
-  border: 1px solid #1a4a8a;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s;
-}
-.header-controls button:hover {
-  background: #1a4a8a;
-}
-.header-controls button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.page-info {
-  font-size: 13px;
-  color: #8899aa;
-  min-width: 80px;
-  text-align: center;
-}
-.viewer {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  overflow: auto;
-  padding: 20px;
-  background: #1a1a2e;
-}
-.viewer canvas {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  border-radius: 4px;
-  max-width: 100%;
-}
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #8899aa;
-  font-size: 16px;
-}
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #0f3460;
-  border-top-color: #e94560;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 12px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RocketMQ 分布式消息队列教程</title>
+  <style>
+    :root {
+      --primary: #e74c3c;
+      --primary-light: #fdecea;
+      --bg: #ffffff;
+      --sidebar-bg: #f8f9fa;
+      --text: #202124;
+      --text-light: #5f6368;
+      --border: #dadce0;
+      --sidebar-width: 280px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    .sidebar {
+      position: fixed; left: 0; top: 0;
+      width: var(--sidebar-width); height: 100vh;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto; z-index: 100;
+      display: flex; flex-direction: column;
+      transition: transform 0.3s;
+    }
+    .sidebar-header {
+      padding: 20px; background: var(--primary); color: white;
+    }
+    .sidebar-header h1 { font-size: 18px; margin-bottom: 4px; }
+    .sidebar-header p { font-size: 13px; opacity: 0.9; }
+    .search-container { padding: 16px; border-bottom: 1px solid var(--border); }
+    .search-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+    .search-tab {
+      flex: 1; padding: 8px; border: 1px solid var(--border);
+      background: white; border-radius: 4px; cursor: pointer; font-size: 13px; text-align: center;
+    }
+    .search-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+    #searchInput {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 4px; font-size: 14px;
+    }
+    #searchInput:focus { outline: none; border-color: var(--primary); }
+    .toc { padding: 8px 0; list-style: none; flex: 1; overflow-y: auto; }
+    .toc li { margin: 1px 0; }
+    .toc-chapter { display: flex; align-items: stretch; }
+    .toc-chapter > a {
+      flex: 1; display: block; padding: 10px 16px;
+      color: var(--text); text-decoration: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .toc-chapter > a:hover { background: var(--primary-light); color: var(--primary); }
+    .toc-chapter > a.active { background: var(--primary-light); color: var(--primary); }
+    .toc-toggle {
+      width: 32px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-light); font-size: 10px;
+      transition: transform 0.2s; flex-shrink: 0;
+    }
+    .toc-toggle:hover { color: var(--primary); }
+    .toc-toggle.expanded { transform: rotate(90deg); }
+    .toc-subheadings { display: none; padding: 0; margin: 0; list-style: none; }
+    .toc-subheadings.open { display: block; }
+    .toc-subheadings a {
+      display: block; padding: 6px 16px 6px 28px;
+      font-size: 13px; color: var(--text-light); text-decoration: none;
+      font-weight: 400;
+    }
+    .toc-subheadings a:hover { background: var(--primary-light); color: var(--primary); }
+    .toc-subheadings a.active { color: var(--primary); font-weight: 500; }
+    .search-results { padding: 16px; list-style: none; flex: 1; overflow-y: auto; display: none; }
+    .search-results.open { display: block; }
+    .search-result {
+      padding: 12px; margin-bottom: 8px;
+      border: 1px solid var(--border); border-radius: 4px;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .search-result:hover { background: var(--primary-light); }
+    .search-result-title { font-weight: 500; color: var(--primary); margin-bottom: 4px; font-size: 13px; }
+    .search-result-snippet { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+    .search-result-snippet mark { background: #fef08a; padding: 0 2px; border-radius: 2px; }
+    .search-empty { text-align: center; color: var(--text-light); padding: 20px; font-size: 13px; }
+    .main {
+      margin-left: var(--sidebar-width);
+      padding: 20px 40px 40px;
+      max-width: 1000px;
+    }
+    .toolbar {
+      position: sticky; top: 0; z-index: 50;
+      padding: 10px 0; margin-bottom: 20px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .toolbar button {
+      background: var(--primary); color: white; border: none;
+      padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px;
+    }
+    .toolbar button:hover { opacity: 0.85; }
+    .toolbar .page-info { font-size: 13px; color: var(--text-light); margin-left: auto; }
+    .page-container {
+      margin-bottom: 20px; text-align: center;
+    }
+    .page-container img {
+      max-width: 100%; height: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 4px;
+    }
+    .page-label { font-size: 12px; color: var(--text-light); margin-top: 8px; }
+    .page-container.loading {
+      min-height: 200px; background: var(--sidebar-bg);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      color: var(--text-light); font-size: 14px;
+    }
+    .menu-toggle {
+      display: none; position: fixed; top: 16px; left: 16px; z-index: 200;
+      background: var(--primary); color: white; border: none;
+      padding: 10px 14px; border-radius: 4px; cursor: pointer; font-size: 18px;
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 60px 16px 20px; }
+      .menu-toggle { display: block; }
+    }
+  </style>
 </head>
 <body>
-<div class="header">
-  <h1>RocketMQ 分布式消息队列教程</h1>
-  <div class="header-controls">
-    <button id="prevBtn" onclick="changePage(-1)">&#8592; 上一页</button>
-    <span class="page-info" id="pageInfo">加载中...</span>
-    <button id="nextBtn" onclick="changePage(1)">下一页 &#8594;</button>
-    <button onclick="zoomIn()">放大 +</button>
-    <button onclick="zoomOut()">缩小 -</button>
-    <button onclick="toggleFit()">适应宽度</button>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">&#9776;</button>
+
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>RocketMQ 教程</h1>
+    <p>分布式消息队列</p>
   </div>
-</div>
-<div class="viewer" id="viewer">
-  <div class="loading"><div class="spinner"></div>正在加载 PDF...</div>
-</div>
+  <div class="search-container">
+    <div class="search-tabs">
+      <button class="search-tab active" data-mode="toc" onclick="switchSearchMode('toc')">按章节</button>
+      <button class="search-tab" data-mode="fulltext" onclick="switchSearchMode('fulltext')">全文检索</button>
+    </div>
+    <input type="text" id="searchInput" placeholder="搜索章节..." oninput="onSearchInput(this.value)">
+  </div>
+  <ul class="toc" id="tocList"></ul>
+  <ul class="search-results" id="searchResults"></ul>
+</nav>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<main class="main" id="content">
+  <div class="toolbar">
+    <button onclick="prevPage()">&#8592; 上一页</button>
+    <button onclick="nextPage()">下一页 &#8594;</button>
+    <input type="range" id="pageSlider" min="1" max="106" value="1" oninput="goToPage(this.value)">
+    <span class="page-info" id="pageInfo">第 1 页 / 共 106 页</span>
+  </div>
+  <div id="pagesContainer"></div>
+</main>
+
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const chapters = [{"page": 0, "title": "第1章 RocketMQ概述", "subheadings": [{"page": 0, "title": "一、MQ概述"}, {"page": 3, "title": "二、RocketMQ概述"}], "endPage": 4}, {"page": 4, "title": "第2章 RocketMQ的安装与启动", "subheadings": [{"page": 4, "title": "一、基本概念"}, {"page": 7, "title": "二、系统架构"}, {"page": 13, "title": "三、单机安装与启动"}, {"page": 16, "title": "四、控制台的安装与启动"}, {"page": 19, "title": "五、集群搭建理论"}, {"page": 23, "title": "六、磁盘阵列RAID"}, {"page": 29, "title": "七、集群搭建实践"}, {"page": 36, "title": "八、mqadmin命令"}], "endPage": 37}, {"page": 37, "title": "第3章 RocketMQ工作原理", "subheadings": [{"page": 37, "title": "一、消息的生产"}, {"page": 40, "title": "二、消息的存储"}, {"page": 44, "title": "三、indexFile"}, {"page": 47, "title": "四、消息的消费"}, {"page": 54, "title": "五、订阅关系的一致性"}, {"page": 59, "title": "六、offset管理"}, {"page": 62, "title": "七、消费幂等"}, {"page": 66, "title": "八、消息堆积与消费延迟"}, {"page": 70, "title": "九、消息的清理"}], "endPage": 67}, {"page": 67, "title": "第4章 RocketMQ应用", "subheadings": [{"page": 67, "title": "一、普通消息"}, {"page": 75, "title": "二、顺序消息"}, {"page": 79, "title": "三、延时消息"}, {"page": 85, "title": "四、事务消息"}, {"page": 96, "title": "五、批量消息"}, {"page": 101, "title": "六、消息过滤"}, {"page": 107, "title": "七、消息发送重试机制"}, {"page": 110, "title": "八、消息消费重试机制"}, {"page": 113, "title": "九、死信队列"}], "endPage": 106}];
+const totalPages = 106;
+let currentPage = 0;
+let currentChapterPage = 0;
+let loadedPages = new Set();
+let searchIndex = null;
+let searchDebounceTimer = null;
 
-let pdfDoc = null;
-let currentPage = 1;
-let scale = 1.5;
-let fitWidth = false;
-let rendering = false;
+function getChapterRange(chapterPage) {
+  for (const ch of chapters) {
+    if (ch.page === chapterPage) return [ch.page, ch.endPage];
+  }
+  return [0, totalPages];
+}
 
-async function loadPDF() {
+function findChapterForPage(pageIdx) {
+  for (let i = chapters.length - 1; i >= 0; i--) {
+    if (pageIdx >= chapters[i].page) return chapters[i].page;
+  }
+  return 0;
+}
+
+function buildTOC() {
+  const toc = document.getElementById('tocList');
+  let html = '';
+  for (const ch of chapters) {
+    html += '<li>';
+    html += '<div class="toc-chapter">';
+    html += '<a data-page="' + ch.page + '" onclick="jumpToPage(' + (ch.page + 1) + ')">' + ch.title + '</a>';
+    html += '<span class="toc-toggle" data-chapter-page="' + ch.page + '" onclick="toggleChapter(' + ch.page + ', this)">▶</span>';
+    html += '</div>';
+    html += '<ul class="toc-subheadings" id="sub-' + ch.page + '">';
+    if (ch.subheadings) {
+      for (const sub of ch.subheadings) {
+        html += '<li><a data-page="' + sub.page + '" onclick="jumpToPage(' + (sub.page + 1) + ')">' + sub.title + '</a></li>';
+      }
+    }
+    html += '</ul></li>';
+  }
+  toc.innerHTML = html;
+}
+
+function toggleChapter(chapterPage, toggleEl) {
+  const subList = document.getElementById('sub-' + chapterPage);
+  if (!subList) return;
+  const isOpen = subList.classList.toggle('open');
+  if (toggleEl) toggleEl.classList.toggle('expanded', isOpen);
+}
+
+function switchSearchMode(mode) {
+  document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-mode="' + mode + '"]').classList.add('active');
+  const toc = document.getElementById('tocList');
+  const results = document.getElementById('searchResults');
+  const input = document.getElementById('searchInput');
+  if (mode === 'toc') {
+    toc.style.display = '';
+    results.classList.remove('open');
+    results.innerHTML = '';
+    input.placeholder = '搜索章节...';
+  } else {
+    toc.style.display = 'none';
+    input.placeholder = '搜索正文内容...';
+  }
+}
+
+async function loadSearchIndex() {
+  if (searchIndex) return true;
   try {
-    const resp = await fetch('RocketMQ.pdf');
-    const buf = await resp.arrayBuffer();
-    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
-    document.getElementById('pageInfo').textContent = '1 / ' + pdfDoc.numPages;
-    renderPage(1);
-  } catch(e) {
-    document.getElementById('viewer').innerHTML = '<div class="loading">PDF 加载失败: ' + e.message + '</div>';
+    const resp = await fetch('assets/search-index.json');
+    searchIndex = await resp.json();
+    return true;
+  } catch(e) { return false; }
+}
+
+function renderSearchResults(query) {
+  const results = document.getElementById('searchResults');
+  const q = query.trim().toLowerCase();
+  if (!q) { results.innerHTML = ''; results.classList.remove('open'); return; }
+  results.classList.add('open');
+  let html = '';
+  let count = 0;
+  for (const ch of chapters) {
+    if (ch.title.toLowerCase().includes(q)) {
+      html += '<div class="search-result" onclick="jumpToPage(' + (ch.page+1) + ')">';
+      html += '<div class="search-result-title">' + ch.title + '</div></div>';
+      count++;
+    }
+    if (ch.subheadings) {
+      for (const sub of ch.subheadings) {
+        if (count >= 50) break;
+        if (sub.title.toLowerCase().includes(q)) {
+          html += '<div class="search-result" onclick="jumpToPage(' + (sub.page+1) + ')">';
+          html += '<div class="search-result-title">' + sub.title + '</div>';
+          html += '<div style="font-size:11px;color:var(--text-light)">' + ch.title + '</div></div>';
+          count++;
+        }
+      }
+    }
+  }
+  if (searchIndex) {
+    for (const item of searchIndex) {
+      if (count >= 50) break;
+      if (item.t && item.t.toLowerCase().includes(q)) {
+        const idx = item.t.toLowerCase().indexOf(q);
+        const start = Math.max(0, idx - 30);
+        const end = Math.min(item.t.length, idx + q.length + 30);
+        let snippet = (start>0?'...':'') + item.t.slice(start, end) + (end<item.t.length?'...':'');
+        const si = snippet.toLowerCase().indexOf(q);
+        snippet = snippet.slice(0,si) + '<mark>' + snippet.slice(si, si+q.length) + '</mark>' + snippet.slice(si+q.length);
+        html += '<div class="search-result" onclick="jumpToPage(' + (item.page+1) + ')">';
+        html += '<div class="search-result-title">第' + (item.page+1) + '页</div>';
+        html += '<div class="search-result-snippet">' + snippet + '</div></div>';
+        count++;
+      }
+    }
+  }
+  results.innerHTML = html || '<div class="search-empty">无匹配结果</div>';
+}
+
+function onSearchInput(value) {
+  const mode = document.querySelector('.search-tab.active').dataset.mode;
+  if (mode !== 'fulltext') {
+    const q = value.trim().toLowerCase();
+    document.querySelectorAll('.toc-chapter > a, .toc-subheadings a').forEach(el => {
+      if (!q) { el.style.display = ''; return; }
+      const match = el.textContent.toLowerCase().includes(q);
+      el.style.display = match ? '' : 'none';
+      if (match) {
+        const subList = el.closest('.toc-subheadings');
+        if (subList) { subList.classList.add('open'); }
+      }
+    });
+    return;
+  }
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  if (!value.trim()) { renderSearchResults(''); return; }
+  searchDebounceTimer = setTimeout(async () => {
+    if (!searchIndex) await loadSearchIndex();
+    renderSearchResults(value);
+  }, 250);
+}
+
+function jumpToPage(num) {
+  goToPage(num);
+  document.querySelector('.sidebar').classList.remove('open');
+}
+
+function loadChapter(chapterPage) {
+  if (currentChapterPage === chapterPage) return;
+  currentChapterPage = chapterPage;
+  loadedPages.clear();
+  const [chStart, chEnd] = getChapterRange(chapterPage);
+  const container = document.getElementById('pagesContainer');
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);">加载中...</div>';
+  requestAnimationFrame(() => {
+    let html = '';
+    for (let i = chStart; i < chEnd; i++) {
+      html += '<div class="page-container loading" id="page-' + i + '" data-page="' + i + '">加载中...</div>';
+    }
+    container.innerHTML = html;
+    setupLazyLoading();
+  });
+}
+
+function goToPage(num) {
+  num = parseInt(num);
+  if (num < 1) num = 1;
+  if (num > totalPages) num = totalPages;
+  const pageIdx = num - 1;
+  const chapterStart = findChapterForPage(pageIdx);
+  if (chapterStart < 0) return;
+  if (chapterStart !== currentChapterPage) {
+    loadChapter(chapterStart);
+    setTimeout(() => _doGoToPage(num), 100);
+    return;
+  }
+  _doGoToPage(num);
+}
+
+function _doGoToPage(num) {
+  num = parseInt(num);
+  if (num < 1) num = 1;
+  if (num > totalPages) num = totalPages;
+  currentPage = num - 1;
+  document.getElementById('pageSlider').value = num;
+  document.getElementById('pageInfo').textContent = '第 ' + num + ' 页 / 共 ' + totalPages + ' 页';
+  document.querySelectorAll('.toc-chapter > a, .toc-subheadings a').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.page) === currentPage);
+  });
+  const chapterStart = findChapterForPage(currentPage);
+  if (chapterStart >= 0) {
+    const subList = document.getElementById('sub-' + chapterStart);
+    if (subList && !subList.classList.contains('open')) {
+      const toggleEl = document.querySelector('.toc-toggle[data-chapter-page="' + chapterStart + '"]');
+      toggleChapter(chapterStart, toggleEl);
+    }
+  }
+  const pageEl = document.getElementById('page-' + currentPage);
+  if (pageEl) pageEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function nextPage() {
+  const [chStart, chEnd] = getChapterRange(currentChapterPage);
+  if (currentPage + 1 < chEnd) goToPage(currentPage + 2);
+  else {
+    const idx = chapters.findIndex(c => c.page === currentChapterPage);
+    if (idx >= 0 && idx < chapters.length - 1) goToPage(chapters[idx+1].page + 1);
   }
 }
 
-async function renderPage(num) {
-  if (rendering || !pdfDoc) return;
-  rendering = true;
-  currentPage = num;
-
-  const page = await pdfDoc.getPage(num);
-  const viewer = document.getElementById('viewer');
-  const containerWidth = viewer.clientWidth - 40;
-
-  let viewport = page.getViewport({ scale: scale });
-
-  if (fitWidth) {
-    const fitScale = containerWidth / page.getViewport({ scale: 1 }).width;
-    viewport = page.getViewport({ scale: fitScale });
-  }
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-
-  viewer.innerHTML = '';
-  viewer.appendChild(canvas);
-
-  await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-
-  document.getElementById('pageInfo').textContent = num + ' / ' + pdfDoc.numPages;
-  document.getElementById('prevBtn').disabled = num <= 1;
-  document.getElementById('nextBtn').disabled = num >= pdfDoc.numPages;
-
-  rendering = false;
-}
-
-function changePage(delta) {
-  const next = currentPage + delta;
-  if (next >= 1 && next <= pdfDoc.numPages) {
-    renderPage(next);
+function prevPage() {
+  const [chStart, chEnd] = getChapterRange(currentChapterPage);
+  if (currentPage > chStart) goToPage(currentPage);
+  else {
+    const idx = chapters.findIndex(c => c.page === currentChapterPage);
+    if (idx > 0) {
+      const prevCh = chapters[idx-1];
+      goToPage(prevCh.endPage);
+    }
   }
 }
 
-function zoomIn() {
-  fitWidth = false;
-  scale = Math.min(scale + 0.25, 4);
-  renderPage(currentPage);
+function setupLazyLoading() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const container = entry.target;
+        const pageIdx = parseInt(container.dataset.page);
+        if (!loadedPages.has(pageIdx)) {
+          loadedPages.add(pageIdx);
+          const img = document.createElement('img');
+          img.src = 'images/page-' + String(pageIdx).padStart(3, '0') + '.webp';
+          img.alt = '第 ' + (pageIdx + 1) + ' 页';
+          img.loading = 'lazy';
+          container.innerHTML = '';
+          container.appendChild(img);
+          const label = document.createElement('div');
+          label.className = 'page-label';
+          label.textContent = '第 ' + (pageIdx + 1) + ' 页';
+          container.appendChild(label);
+          container.classList.remove('loading');
+        }
+        observer.unobserve(container);
+      }
+    });
+  }, { rootMargin: '200px' });
+  document.querySelectorAll('.page-container').forEach(el => observer.observe(el));
 }
 
-function zoomOut() {
-  fitWidth = false;
-  scale = Math.max(scale - 0.25, 0.5);
-  renderPage(currentPage);
-}
-
-function toggleFit() {
-  fitWidth = !fitWidth;
-  renderPage(currentPage);
-}
-
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); changePage(-1); }
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); changePage(1); }
-  if (e.key === 'Home') { e.preventDefault(); renderPage(1); }
-  if (e.key === 'End') { e.preventDefault(); renderPage(pdfDoc.numPages); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextPage(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevPage(); }
+  if (e.key === 'Home') { e.preventDefault(); goToPage(1); }
+  if (e.key === 'End') { e.preventDefault(); goToPage(totalPages); }
 });
 
-loadPDF();
+buildTOC();
+loadChapter(0);
+setTimeout(() => goToPage(1), 150);
 </script>
 </body>
 </html>
