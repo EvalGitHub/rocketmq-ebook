@@ -317,14 +317,12 @@ function loadChapter(chapterPage) {
   const [chStart, chEnd] = getChapterRange(chapterPage);
   const container = document.getElementById('pagesContainer');
   container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);">加载中...</div>';
-  requestAnimationFrame(() => {
-    let html = '';
-    for (let i = chStart; i < chEnd; i++) {
-      html += '<div class="page-container loading" id="page-' + i + '" data-page="' + i + '">加载中...</div>';
-    }
-    container.innerHTML = html;
-    setupLazyLoading();
-  });
+  let html = '';
+  for (let i = chStart; i < chEnd; i++) {
+    html += '<div class="page-container loading" id="page-' + i + '" data-page="' + i + '">加载中...</div>';
+  }
+  container.innerHTML = html;
+  setupLazyLoading();
 }
 
 function goToPage(num) {
