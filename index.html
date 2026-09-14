@@ -167,6 +167,9 @@ const totalPages = 106;
 let currentPage = 0;
 let currentChapterPage = -1;
 let loadedPages = new Set();
+let nextLoadIndex = 0;
+let chEndPage = 0;
+const BATCH_SIZE = 5;
 let searchIndex = null;
 let searchDebounceTimer = null;
 
@@ -331,14 +334,52 @@ function loadChapter(chapterPage) {
   currentChapterPage = chapterPage;
   loadedPages.clear();
   const [chStart, chEnd] = getChapterRange(chapterPage);
+  chEndPage = chEnd;
+  nextLoadIndex = chStart;
   const container = document.getElementById('pagesContainer');
   container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);">加载中...</div>';
   let html = '';
   for (let i = chStart; i < chEnd; i++) {
     html += '<div class="page-container loading" id="page-' + i + '" data-page="' + i + '">加载中...</div>';
   }
+  html += '<div id="loadMoreArea" style="text-align:center;padding:20px;"></div>';
   container.innerHTML = html;
-  setupLazyLoading();
+  loadNextBatch();
+}
+
+function loadNextBatch() {
+  var count = 0;
+  while (nextLoadIndex < chEndPage && count < BATCH_SIZE) {
+    loadPageImage(nextLoadIndex);
+    nextLoadIndex++;
+    count++;
+  }
+  var area = document.getElementById('loadMoreArea');
+  if (area) {
+    if (nextLoadIndex < chEndPage) {
+      var remaining = chEndPage - nextLoadIndex;
+      area.innerHTML = '<button onclick="loadNextBatch()" style="padding:10px 24px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">加载更多（还剩 ' + remaining + ' 页）</button>';
+    } else {
+      area.innerHTML = '<div style="color:var(--text-light);font-size:13px;">本章已加载完毕</div>';
+    }
+  }
+}
+
+function loadPageImage(pageIdx) {
+  if (loadedPages.has(pageIdx)) return;
+  loadedPages.add(pageIdx);
+  var container = document.getElementById('page-' + pageIdx);
+  if (!container) return;
+  var img = document.createElement('img');
+  img.src = 'images/page-' + String(pageIdx).padStart(3, '0') + '.webp';
+  img.alt = '第 ' + (pageIdx + 1) + ' 页';
+  container.innerHTML = '';
+  container.appendChild(img);
+  var label = document.createElement('div');
+  label.className = 'page-label';
+  label.textContent = '第 ' + (pageIdx + 1) + ' 页';
+  container.appendChild(label);
+  container.classList.remove('loading');
 }
 
 function goToPage(num) {
@@ -361,6 +402,21 @@ function _doGoToPage(num) {
   if (num < 1) num = 1;
   if (num > totalPages) num = totalPages;
   currentPage = num - 1;
+  // Auto-load pages up to target if not yet loaded
+  while (nextLoadIndex <= currentPage && nextLoadIndex < chEndPage) {
+    loadPageImage(nextLoadIndex);
+    nextLoadIndex++;
+  }
+  // Update load more area
+  var area = document.getElementById('loadMoreArea');
+  if (area) {
+    if (nextLoadIndex < chEndPage) {
+      var remaining = chEndPage - nextLoadIndex;
+      area.innerHTML = '<button onclick="loadNextBatch()" style="padding:10px 24px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">加载更多（还剩 ' + remaining + ' 页）</button>';
+    } else {
+      area.innerHTML = '<div style="color:var(--text-light);font-size:13px;">本章已加载完毕</div>';
+    }
+  }
   document.getElementById('pageSlider').value = num;
   document.getElementById('pageInfo').textContent = '第 ' + num + ' 页 / 共 ' + totalPages + ' 页';
   document.querySelectorAll('.toc-chapter > a, .toc-subheadings a').forEach(el => {
@@ -397,24 +453,6 @@ function prevPage() {
       goToPage(prevCh.endPage);
     }
   }
-}
-
-function setupLazyLoading() {
-  document.querySelectorAll('.page-container').forEach(container => {
-    const pageIdx = parseInt(container.dataset.page);
-    if (loadedPages.has(pageIdx)) return;
-    loadedPages.add(pageIdx);
-    const img = document.createElement('img');
-    img.src = 'images/page-' + String(pageIdx).padStart(3, '0') + '.webp';
-    img.alt = '第 ' + (pageIdx + 1) + ' 页';
-    container.innerHTML = '';
-    container.appendChild(img);
-    const label = document.createElement('div');
-    label.className = 'page-label';
-    label.textContent = '第 ' + (pageIdx + 1) + ' 页';
-    container.appendChild(label);
-    container.classList.remove('loading');
-  });
 }
 
 document.addEventListener('keydown', e => {
