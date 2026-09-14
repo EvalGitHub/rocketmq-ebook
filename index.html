@@ -286,13 +286,29 @@ function onSearchInput(value) {
   const mode = document.querySelector('.search-tab.active').dataset.mode;
   if (mode !== 'fulltext') {
     const q = value.trim().toLowerCase();
-    document.querySelectorAll('.toc-chapter > a, .toc-subheadings a').forEach(el => {
-      if (!q) { el.style.display = ''; return; }
-      const match = el.textContent.toLowerCase().includes(q);
-      el.style.display = match ? '' : 'none';
-      if (match) {
-        const subList = el.closest('.toc-subheadings');
-        if (subList) { subList.classList.add('open'); }
+    document.querySelectorAll('.toc-chapter').forEach(chDiv => {
+      const chLink = chDiv.querySelector('a');
+      const subList = chDiv.parentElement.querySelector('.toc-subheadings');
+      if (!q) {
+        chLink.style.display = '';
+        if (subList) subList.querySelectorAll('a').forEach(a => a.style.display = '');
+        return;
+      }
+      const chMatch = chLink.textContent.toLowerCase().includes(q);
+      let hasVisibleSub = false;
+      if (subList) {
+        subList.querySelectorAll('a').forEach(a => {
+          const match = a.textContent.toLowerCase().includes(q);
+          a.style.display = match ? '' : 'none';
+          if (match) hasVisibleSub = true;
+        });
+      }
+      if (chMatch || hasVisibleSub) {
+        chLink.style.display = '';
+        if (subList) subList.classList.add('open');
+      } else {
+        chLink.style.display = 'none';
+        if (subList) subList.classList.remove('open');
       }
     });
     return;
