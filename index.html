@@ -345,6 +345,19 @@ function loadChapter(chapterPage) {
   html += '<div id="loadMoreArea" style="text-align:center;padding:20px;"></div>';
   container.innerHTML = html;
   loadNextBatch();
+  setupScrollLoader();
+}
+
+function setupScrollLoader() {
+  window.onscroll = function() {
+    if (nextLoadIndex >= chEndPage) return;
+    var nextContainer = document.getElementById('page-' + nextLoadIndex);
+    if (!nextContainer) return;
+    var rect = nextContainer.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 2) {
+      loadNextBatch();
+    }
+  };
 }
 
 function loadNextBatch() {
